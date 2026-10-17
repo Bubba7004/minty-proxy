@@ -132,7 +132,7 @@
         <div>minty v3.0</div>
     </footer>
 
-    <script>
+<script>
         async function launchProxy() {
             let input = document.getElementById('urlInput').value.trim();
             const iframe = document.getElementById('viewer');
@@ -150,17 +150,16 @@
 
             try {
                 if (!navigator.serviceWorker) {
-                    alert("Service workers not supported.");
+                    alert("Service workers are not supported.");
                     return;
                 }
 
-                // Register Scramjet worker scope
-                await navigator.serviceWorker.register('/scramjet.sw.js', {
+                const registration = await navigator.serviceWorker.register('/scramjet/scramjet_bundled.js', {
                     scope: '/'
                 });
 
-                // Set iframe source through the scramjet rewrite protocol
-                // (Scramjet prefixes requests to route them through the WASM rewriter)
+                await navigator.serviceWorker.ready;
+
                 iframe.src = '/scram/' + encodeURIComponent(targetUrl);
             } catch (err) {
                 console.error("Scramjet launch error:", err);
