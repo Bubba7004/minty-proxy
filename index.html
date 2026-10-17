@@ -157,15 +157,13 @@
                 } else {
                     targetUrl = 'https://www.google.com/search?q=' + encodeURIComponent(input);
                 }
-            }
-
-            try {
+try {
                 if (!navigator.serviceWorker) {
                     alert("Service workers are not supported.");
                     return;
                 }
 
-                const registration = await navigator.serviceWorker.register('/scramjet/scramjet_bundled.js', {
+                const registration = await navigator.serviceWorker.register('/scramjet.sw.js', {
                     scope: '/'
                 });
 
