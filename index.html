@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>minty — Scramjet Space Proxy</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --grass-green: #2ecc71;
+            --mint-glow: #00ff88;
+            --space-bg: #090c10;
+            --space-card: rgba(18, 26, 36, 0.85);
+            --space-border: rgba(46, 204, 113, 0.3);
+            --text-main: #e6f5ed;
+            --text-muted: #8ca398;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background-color: var(--space-bg);
+            color: var(--text-main);
+            overflow: hidden;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 24px;
+            background: var(--space-card);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--space-border);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .brand-logo {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--mint-glow), var(--grass-green));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);
+            font-size: 18px;
+        }
+
+        .brand-name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 22px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .brand-name span { color: var(--mint-glow); }
+
+        .search-box {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            background: rgba(10, 15, 20, 0.9);
+            border: 1px solid var(--space-border);
+            border-radius: 10px;
+            padding: 4px 6px 4px 16px;
+        }
+
+        .search-box input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-main);
+            font-size: 14px;
+        }
+
+        .search-box button {
+            padding: 8px 18px;
+            background: linear-gradient(135deg, var(--grass-green), var(--mint-glow));
+            color: #05140c;
+            border: none;
+            border-radius: 7px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
+        }
+
+        main { flex: 1; width: 100%; background: #000; }
+        #viewer { width: 100%; height: 100%; border: none; background: #fff; }
+
+        footer {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 20px;
+            background: var(--space-card);
+            border-top: 1px solid var(--space-border);
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <a href="#" class="brand">
+            <div class="brand-logo">🌱</div>
+            <div class="brand-name">mint<span>y</span></div>
+        </a>
+        <div class="search-box">
+            <input type="url" id="urlInput" placeholder="Enter URL (e.g. https://youtube.com)" value="https://youtube.com">
+            <button onclick="launchProxy()">Launch 🚀</button>
+        </div>
+    </header>
+
+    <main>
+        <iframe id="viewer"></iframe>
+    </main>
+
+    <footer>
+        <div>Engine: Scramjet WASM Core</div>
+        <div>minty v3.0</div>
+    </footer>
+
+    <script>
+        async function launchProxy() {
+            let input = document.getElementById('urlInput').value.trim();
+            const iframe = document.getElementById('viewer');
+
+            if (!input) return;
+
+            let targetUrl = input;
+            if (!input.startsWith('http://') && !input.startsWith('https://')) {
+                if (input.includes('.') && !input.includes(' ')) {
+                    targetUrl = 'https://' + input;
+                } else {
+                    targetUrl = 'https://www.google.com/search?q=' + encodeURIComponent(input);
+                }
+            }
+
+            try {
+                if (!navigator.serviceWorker) {
+                    alert("Service workers not supported.");
+                    return;
+                }
+
+                // Register Scramjet worker scope
+                await navigator.serviceWorker.register('/scramjet.sw.js', {
+                    scope: '/'
+                });
+
+                // Set iframe source through the scramjet rewrite protocol
+                // (Scramjet prefixes requests to route them through the WASM rewriter)
+                iframe.src = '/scram/' + encodeURIComponent(targetUrl);
+            } catch (err) {
+                console.error("Scramjet launch error:", err);
+                alert("Error launching proxy: " + err.message);
+            }
+        }
+    </script>
+</body>
+</html>
