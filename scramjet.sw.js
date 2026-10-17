@@ -1,19 +1,27 @@
-importScripts('/scramjet/scramjet_bundled.js');
+try {
+    importScripts('/scramjet/scramjet_bundled.js');
 
-const scramjet = new ScramjetServiceWorker();
+    const { ScramjetServiceWorker } = $scramjetLoadWorker();
+    const scramjet = new ScramjetServiceWorker();
 
-self.addEventListener('fetch', (event) => {
-    event.respondWith(
-        (async () => {
-            try {
-                await scramjet.loadConfig();
-                if (scramjet.route(event)) {
-                    return await scramjet.fetch(event);
+    self.addEventListener('fetch', (event) => {
+        event.respondWith(
+            (async () => {
+                try {
+                    await scramjet.loadConfig();
+                    if (scramjet.route(event)) {
+                        return await scramjet.fetch(event);
+                    }
+                } catch (err) {
+                    console.error("Scramjet routing exception:", err);
                 }
-            } catch (err) {
-                console.error("Scramjet SW fetch error:", err);
-            }
-            return fetch(event.request);
-        })()
-    );
-});
+                return fetch(event.request);
+            })()
+        );
+    });
+
+    console.log("Scramjet Service Worker initialized successfully.");
+} catch (err) {
+    console.error("CRITICAL: Scramjet SW failed to evaluate:", err);
+    throw err;
+}
