@@ -7,13 +7,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --grass-green: #2ecc71;
-            --mint-glow: #00ff88;
-            --space-bg: #090c10;
-            --space-card: rgba(18, 26, 36, 0.85);
-            --space-border: rgba(46, 204, 113, 0.3);
-            --text-main: #e6f5ed;
-            --text-muted: #8ca398;
+            --neon-green: #00ff66;
+            --matrix-green: #10b981;
+            --space-bg: #030507;
+            --space-card: rgba(8, 14, 11, 0.9);
+            --space-border: rgba(0, 255, 102, 0.25);
+            --text-main: #e2fcef;
+            --text-muted: #6b8c7a;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
@@ -25,54 +25,52 @@
             background-color: var(--space-bg);
             color: var(--text-main);
             overflow: hidden;
+            background-image: radial-gradient(circle at 50% 0%, rgba(0, 255, 102, 0.05) 0%, transparent 70%);
         }
 
         header {
             display: flex;
             align-items: center;
-            gap: 16px;
-            padding: 12px 24px;
+            gap: 20px;
+            padding: 14px 28px;
             background: var(--space-card);
-            backdrop-filter: blur(12px);
+            backdrop-filter: blur(16px);
             border-bottom: 1px solid var(--space-border);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.8);
         }
 
         .brand {
             display: flex;
             align-items: center;
-            gap: 10px;
             text-decoration: none;
         }
 
         .brand-logo {
-            width: 34px;
-            height: 34px;
-            border-radius: 8px;
-            background: linear-gradient(135deg, var(--mint-glow), var(--grass-green));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 12px rgba(0, 255, 136, 0.4);
-            font-size: 18px;
+            height: 38px;
+            width: auto;
+            filter: drop-shadow(0 0 8px rgba(0, 255, 102, 0.5));
+            transition: transform 0.2s ease;
         }
 
-        .brand-name {
-            font-family: 'Space Grotesk', sans-serif;
-            font-size: 22px;
-            font-weight: 700;
-            color: #ffffff;
+        .brand-logo:hover {
+            transform: scale(1.03);
         }
-
-        .brand-name span { color: var(--mint-glow); }
 
         .search-box {
             flex: 1;
             display: flex;
             align-items: center;
-            background: rgba(10, 15, 20, 0.9);
+            background: rgba(2, 6, 4, 0.95);
             border: 1px solid var(--space-border);
-            border-radius: 10px;
-            padding: 4px 6px 4px 16px;
+            border-radius: 12px;
+            padding: 4px 6px 4px 18px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.6);
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .search-box:focus-within {
+            border-color: var(--neon-green);
+            box-shadow: 0 0 12px rgba(0, 255, 102, 0.25), inset 0 2px 4px rgba(0, 0, 0, 0.6);
         }
 
         .search-box input {
@@ -82,31 +80,45 @@
             outline: none;
             color: var(--text-main);
             font-size: 14px;
+            font-weight: 500;
+        }
+
+        .search-box input::placeholder {
+            color: var(--text-muted);
         }
 
         .search-box button {
-            padding: 8px 18px;
-            background: linear-gradient(135deg, var(--grass-green), var(--mint-glow));
-            color: #05140c;
+            padding: 9px 22px;
+            background: linear-gradient(135deg, var(--matrix-green), var(--neon-green));
+            color: #020804;
             border: none;
-            border-radius: 7px;
+            border-radius: 8px;
             font-family: 'Space Grotesk', sans-serif;
             font-weight: 700;
+            font-size: 13px;
             cursor: pointer;
-            box-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
+            box-shadow: 0 0 12px rgba(0, 255, 102, 0.35);
+            transition: all 0.2s ease;
         }
 
-        main { flex: 1; width: 100%; background: #000; }
-        #viewer { width: 100%; height: 100%; border: none; background: #fff; }
+        .search-box button:hover {
+            filter: brightness(1.1);
+            box-shadow: 0 0 18px rgba(0, 255, 102, 0.6);
+            transform: translateY(-1px);
+        }
+
+        main { flex: 1; width: 100%; background: #000; position: relative; }
+        #viewer { width: 100%; height: 100%; border: none; background: #000; }
 
         footer {
             display: flex;
             justify-content: space-between;
-            padding: 8px 20px;
+            padding: 10px 24px;
             background: var(--space-card);
             border-top: 1px solid var(--space-border);
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-muted);
+            letter-spacing: 0.5px;
         }
     </style>
 </head>
@@ -114,11 +126,10 @@
 
     <header>
         <a href="#" class="brand">
-            <div class="brand-logo">🌱</div>
-            <div class="brand-name">mint<span>y</span></div>
+            <img src="logo.png" alt="minty" class="brand-logo">
         </a>
         <div class="search-box">
-            <input type="url" id="urlInput" placeholder="Enter URL (e.g. https://youtube.com)" value="https://youtube.com">
+            <input type="url" id="urlInput" placeholder="Enter URL or search query (e.g. https://youtube.com)" value="https://youtube.com">
             <button onclick="launchProxy()">Launch 🚀</button>
         </div>
     </header>
@@ -129,10 +140,10 @@
 
     <footer>
         <div>Engine: Scramjet WASM Core</div>
-        <div>minty v3.0</div>
+        <div>minty v3.0 // secure space network</div>
     </footer>
 
-<script>
+    <script>
         async function launchProxy() {
             let input = document.getElementById('urlInput').value.trim();
             const iframe = document.getElementById('viewer');
