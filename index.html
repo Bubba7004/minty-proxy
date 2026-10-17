@@ -157,18 +157,22 @@
                 } else {
                     targetUrl = 'https://www.google.com/search?q=' + encodeURIComponent(input);
                 }
-try {
+            }
+
+            try {
                 if (!navigator.serviceWorker) {
                     alert("Service workers are not supported.");
                     return;
                 }
 
+                // Register root service worker
                 const registration = await navigator.serviceWorker.register('/scramjet.sw.js', {
                     scope: '/'
                 });
 
                 await navigator.serviceWorker.ready;
 
+                // Route through the Scramjet prefix
                 iframe.src = '/scram/' + encodeURIComponent(targetUrl);
             } catch (err) {
                 console.error("Scramjet launch error:", err);
