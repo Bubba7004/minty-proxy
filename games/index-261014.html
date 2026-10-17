@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>minty</title>
+  <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/Bubba7004/minty-proxy-assets@main/assets/minty.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.344.0/dist/umd/lucide.min.js"></script>
+
+  <style>
+    :root {
+      --bg-main: #0f2e26;
+      --primary: #9ff2c7;
+    }
+    html {
+      scrollbar-gutter: stable;
+    }
+    body { font-family: 'DM Sans', system-ui, sans-serif; }
+    .portal-body {
+      background-color: var(--bg-main);
+      color: white;
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #2b5c4d; border-radius: 3px; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    .loading-spinner { animation: spin 1s linear infinite; }
+    @keyframes shimmer { 0% { background-position: -468px 0; } 100% { background-position: 468px 0; } }
+    .skeleton {
+      background: linear-gradient(to right, #174238 8%, #1d5144 18%, #174238 33%);
+      background-size: 800px 104px;
+      animation: shimmer 1.5s linear infinite forwards;
+    }
+    .category-btn { background-color: #174238; color: rgba(233,255,245,0.6); }
+    .category-btn.active { background-color: #9ff2c7; color: #0a211b; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .game-card-item {
+      content-visibility: auto;
+      contain-intrinsic-size: 150px 200px;
+      aspect-ratio: 16 / 9;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      border-radius: 20px;
+    }
+    .game-card-item:hover {
+      transform: translateY(-8px) scale(1.03);
+      border-color: rgba(159, 242, 199, 0.6);
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5), 0 0 30px rgba(159, 242, 199, 0.2);
+      z-index: 10;
+    }
+    .card-banner { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
+    .game-card-item:hover .card-banner { transform: scale(1.1); }
+    .card-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(15, 23, 42, 0.9) 0%, rgba(15, 23, 42, 0.4) 40%, transparent 100%); display: flex; flex-direction: column; justify-content: flex-end; padding: 16px; }
+    .card-badge { position: absolute; top: 12px; right: 12px; background: rgba(159, 242, 199, 0.95); backdrop-filter: blur(4px); color: #0a211b; font-size: 10px; font-weight: 900; padding: 4px 10px; border-radius: 8px; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); }
+    @keyframes border-glow {
+      0%, 100% { border-color: rgba(159, 242, 199, 0.2); box-shadow: 0 0 10px rgba(159, 242, 199, 0.1); }
+      50% { border-color: rgba(159, 242, 199, 0.8); box-shadow: 0 0 25px rgba(159, 242, 199, 0.4); }
+    }
+    .first-game-glow { animation: border-glow 3s infinite ease-in-out; border-width: 1.5px !important; }
+    .login-input { background-color: #174238; border: 1px solid rgba(159, 242, 199, 0.14); color: white; width: 100%; padding: 12px 20px; border-radius: 16px; outline: none; transition: border-color 0.2s; }
+    .login-input:focus { border-color: #9ff2c7; }
+      /* dark text on filled mint surfaces */
+    [class*="bg-[#9ff2c7]"] { color: #0a211b !important; }
+    .card-badge { color: #0a211b !important; }
+  </style>
+</head>
+<body oncontextmenu="return false;">
+  <div id="app">
+    
+    <div class="portal-body min-h-screen">
+      <nav class="sticky top-0 z-50 bg-[#0f2e26] border-b border-white/5 px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div class="flex items-center justify-between w-full md:w-auto gap-4">
+          <div class="flex items-center gap-2.5 group cursor-pointer">
+            <img src="https://cdn.jsdelivr.net/gh/Bubba7004/minty-proxy-assets@main/assets/minty.svg" class="w-8 h-8 rounded-lg" alt="minty">
+            <span class="hidden md:inline text-2xl font-semibold tracking-tight text-[#9ff2c7]" style="font-family:'Fredoka',sans-serif">minty</span>
+          </div>
+          <div class="flex items-center gap-3">
+            <div id="stats-area-mobile" class="flex md:hidden"></div>
+            <div id="server-select-container"></div>
+            <div id="user-area-mobile" class="flex md:hidden items-center"></div>
+          </div>
+        </div>
+        <div class="flex items-center w-full max-w-xl">
+          <div class="relative w-full group">
+            <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"></i>
+            <input type="text" id="search-input" placeholder="Discovery your next game..." class="w-full h-10 bg-gray-800 border border-white/5 rounded-xl pl-11 pr-4 text-sm text-white placeholder-gray-500 focus:ring-2 focus:ring-[#9ff2c7]/30 transition-all outline-none" oninput="App.handleSearch(this.value)">
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <div id="stats-area-desktop" class="hidden md:flex"></div>
+          <div id="user-area-desktop" class="hidden md:flex items-center"></div>
+        </div>
+      </nav>
+      <section id="recent-games-section" class="max-w-7xl mx-auto px-4 py-6 hidden">
+        <div class="flex items-center justify-between mb-4"><h2 class="text-lg font-black text-white flex items-center gap-2"><i data-lucide="history" class="w-5 h-5 text-[#9ff2c7]"></i> Recently Played</h2></div>
+        <div id="recent-games-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
+      </section>
+      <div id="category-bar" class="max-w-7xl mx-auto px-4 py-2 flex gap-2 overflow-x-auto no-scrollbar scroll-smooth"></div>
+      <main class="max-w-7xl mx-auto p-4 pb-20"><div id="game-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4"></div></main>
+
+      <div id="game-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:100;">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-md" onclick="App.closeModal()"></div>
+        <div id="modal-container-el" class="absolute bottom-0 left-0 right-0 bg-[#0f2e26] border-t border-white/10 p-6 md:top-1/2 md:left-1/2 md:bottom-auto md:w-[500px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-3xl">
+          <div id="modal-content" class="flex flex-col gap-6"></div>
+        </div>
+      </div>
+      <div id="login-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:200;">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="App.closeLoginModal()"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#0f2e26] w-[90%] max-w-[420px] min-h-[480px] p-8 rounded-3xl border border-white/10 flex flex-col">
+          <div class="flex items-center justify-between mb-6 flex-shrink-0">
+            <h2 class="text-2xl font-bold text-white">Sign In <span class="text-gray-600 font-normal mx-1">/</span> <button onclick="App.showSignupModal()" class="text-lg text-[#9ff2c7] font-semibold hover:underline transition inline">Sign Up</button></h2>
+          </div>
+          <div class="space-y-4 flex-1">
+            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">Email Address</label><div class="relative"><i data-lucide="mail" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"></i><input type="email" id="login-email" class="login-input pl-11" placeholder="name@example.com"></div></div>
+            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">Password</label><div class="relative"><i data-lucide="lock" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none"></i><input type="password" id="login-password" class="login-input pl-11 pr-11" placeholder="••••••••" onkeydown="if(event.key==='Enter')App.handleLogin()"><button type="button" onclick="App.togglePasswordVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white transition-colors p-0.5" id="pw-toggle-btn"><i data-lucide="eye" class="w-4 h-4"></i></button></div></div>
+            <div><label class="block text-xs font-bold text-gray-500 uppercase mb-2">Region Server</label><select id="server-select" class="login-input cursor-pointer appearance-none pr-10" style="background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239ca3af' d='M2 4l4 4 4-4'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 14px center"><option value="21">South America</option><option value="22">US West</option><option value="23" selected>US East</option><option value="3">Asia</option><option value="4">Europe</option></select></div>
+          </div>
+          <button id="login-submit-btn" onclick="App.handleLogin()" class="w-full bg-[#9ff2c7] text-white font-bold py-4 rounded-2xl transition shadow-lg shadow-emerald-300/20 flex-shrink-0">Sign In</button>
+        </div>
+      </div>
+      <div id="signup-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:250;">
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#0f2e26] w-[90%] max-w-[420px] min-h-[480px] p-8 rounded-3xl border border-white/10 flex flex-col">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-white">Create Account</h2>
+            <button onclick="App.closeSignupModal()" class="p-1.5 hover:bg-gray-800 rounded-lg transition"><i data-lucide="x" class="w-5 h-5 text-gray-500"></i></button>
+          </div>
+          <p class="text-sm text-gray-400 mb-6 leading-relaxed flex-shrink-0">To create an account, please visit our main site <a href="https://web.cloudmoonapp.com" target="_blank" class="text-[#9ff2c7] font-semibold hover:underline">web.cloudmoonapp.com</a> and follow these steps:</p>
+          <div class="space-y-5 flex-1">
+            <div class="flex items-start gap-4">
+              <div class="w-8 h-8 rounded-full bg-[#9ff2c7]/20 flex items-center justify-center flex-shrink-0"><span class="text-sm font-black text-[#9ff2c7]">1</span></div>
+              <p class="text-sm font-semibold text-white leading-8">Sign in with <span class="font-black bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-green-400">Google</span>.</p>
+            </div>
+            <div class="flex items-start gap-4">
+              <div class="w-8 h-8 rounded-full bg-[#9ff2c7]/20 flex items-center justify-center flex-shrink-0"><span class="text-sm font-black text-[#9ff2c7]">2</span></div>
+              <p class="text-sm font-semibold text-white leading-8">Set your password by clicking your avatar.</p>
+            </div>
+            <div class="flex items-start gap-4">
+              <div class="w-8 h-8 rounded-full bg-[#9ff2c7]/20 flex items-center justify-center flex-shrink-0"><span class="text-sm font-black text-[#9ff2c7]">3</span></div>
+              <p class="text-sm font-semibold text-white leading-8">Now you can log in on both sites using your email address and password!</p>
+            </div>
+          </div>
+          <button onclick="App.closeSignupModal()" class="w-full bg-[#9ff2c7] text-white font-bold py-4 rounded-2xl transition shadow-lg shadow-emerald-300/20 flex-shrink-0">Got it</button>
+        </div>
+      </div>
+      <div id="queue-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:300;">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#0f2e26] w-[90%] max-w-[420px] p-8 rounded-3xl text-center">
+          <div class="loading-spinner w-12 h-12 border-4 border-[#9ff2c7] border-t-transparent rounded-full mx-auto mb-6"></div>
+          <h2 class="text-2xl font-bold text-white mb-2">In Queue</h2>
+          <p class="text-gray-400 mb-8">Waiting for an available cloud device...</p>
+          <div class="grid grid-cols-2 gap-4 mb-8">
+            <div class="bg-gray-800/50 rounded-2xl p-4"><span class="block text-xs text-gray-500 uppercase font-bold mb-1">Position</span><span id="queue-pos" class="text-2xl font-bold text-white">--</span></div>
+            <div class="bg-gray-800/50 rounded-2xl p-4"><span class="block text-xs text-gray-500 uppercase font-bold mb-1">Est. Time</span><span id="queue-time" class="text-2xl font-bold text-white">--</span></div>
+          </div>
+          <button onclick="App.cancelQueue()" class="w-full bg-gray-800 text-white font-bold py-4 rounded-2xl">Cancel Waiting</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+const API_LIST = ["https://api.cloudmoon.cloudbatata.com", "https://api.prod.cloudmoonapp.com", "https://api.prod.geometry.today"];
+const BACKUP_API_LIST = ["https://hrz5zfjq02.execute-api.us-east-1.amazonaws.com", "https://api.prod.viewoncloud.com"];
+window.App = {
+  'currentApiHost': null,
+  'apiHostPromise': null,
+  'token': localStorage.getItem("cm_auth_token"),
+  'rawGames': [],
+  'filteredGames': [],
+  'categories': [],
+  'activeCategory': "all",
+  'searchQuery': '',
+  'isLoading': false,
+  'userLevel': 0x0,
+  'timeLeft': '',
+  'lastRenderedKey': '',
+  'statsInterval': null,
+  'queueInterval': null,
+  'currentPkg': null,
+  'searchTimer': null,
+  'recentGames': [],
+  async 'init'() {
+    await this.probeApi();
+    this.renderUserArea();
+    this.initPortal();
+  },
+  async 'probeApi'() {
+    if (this.currentApiHost) {
+      return this.currentApiHost;
+    }
+    if (this.apiHostPromise) {
+      return this.apiHostPromise;
+    }
+    this.apiHostPromise = (async () => {
+      let _0x300a29 = await this.findAvailableApiFast(API_LIST);
+      if (!_0x300a29) {
+        console.log("Main APIs failed, trying backup list...");
+        _0x300a29 = await this.findAvailableApiFast(BACKUP_API_LIST);
+      }
+      if (_0x300a29) {
+        this.currentApiHost = _0x300a29;
+        console.log("API Host selected:", _0x300a29);
+        return _0x300a29;
+      }
+      return null;
+    })();
+    return this.apiHostPromise;
+  },
+  async 'findAvailableApiFast'(_0xf3977c) {
+    const _0x2cde47 = _0xf3977c.map(() => new AbortController());
+    return new Promise(_0xd5ddec => {
+      let _0x2b6669 = 0x0;
+      let _0x51930c = false;
+      _0xf3977c.forEach((_0x4c2875, _0x8fee6) => {
+        const _0xabe48f = setTimeout(() => _0x2cde47[_0x8fee6].abort(), 0xbb8);
+        fetch(_0x4c2875 + "/_ping", {
+          'signal': _0x2cde47[_0x8fee6].signal
+        }).then(_0x25e52f => {
+          clearTimeout(_0xabe48f);
+          if (_0x25e52f.ok && !_0x51930c) {
+            _0x51930c = true;
+            _0x2cde47.forEach((_0x4ec6cb, _0x4b8c47) => {
+              if (_0x8fee6 !== _0x4b8c47) {
+                _0x4ec6cb.abort();
+              }
+            });
+            _0xd5ddec(_0x4c2875);
+          } else {
+            throw new Error();
+          }
+        })["catch"](() => {
+          clearTimeout(_0xabe48f);
+          _0x2b6669++;
+          if (_0x2b6669 === _0xf3977c.length && !_0x51930c) {
+            _0xd5ddec(null);
+          }
+        });
+      });
+    });
+  },
+  async 'customFetch'(_0x3f267b, _0xe69e33 = {}) {
+    const _0x54d440 = await this.probeApi();
+    if (!_0x54d440) {
+      throw new Error("API service unavailable");
+    }
+    const _0x4372cc = new URL(_0x54d440 + (_0x3f267b.startsWith('/') ? _0x3f267b : '/' + _0x3f267b));
+    _0x4372cc.searchParams.set("device_type", "web");
+    _0x4372cc.searchParams.set("query_uuid", this.generateUUID());
+    _0x4372cc.searchParams.set("site", 'cm');
+    _0x4372cc.searchParams.set("device_id", this.getDeviceId());
+    const _0x2ba272 = new Headers(_0xe69e33.headers || {});
+    const _0x532a3d = localStorage.getItem("cm_auth_token");
+    if (_0x532a3d) {
+      _0x2ba272.set("X-User-Token", _0x532a3d);
+    }
+    const _0x474321 = localStorage.getItem("cm_lang") || navigator.language.split('-')[0x0] || 'en';
+    _0x2ba272.set("X-User-Language", _0x474321);
+    const _0x5e5cd8 = navigator.language || 'en';
+    const _0x5d297a = _0x5e5cd8.split('-').length > 0x1 ? _0x5e5cd8.split('-')[0x1] : _0x5e5cd8.split('-')[0x0];
+    _0x2ba272.set("X-User-Locale", _0x5d297a.toUpperCase());
+    if (!_0x2ba272.has("Content-Type")) {
+      _0x2ba272.set("Content-Type", "application/json");
+    }
+    try {
+      const _0x34d785 = await fetch(_0x4372cc.toString(), {
+        ..._0xe69e33,
+        'headers': _0x2ba272
+      });
+      const _0x58f674 = _0x34d785.clone();
+      try {
+        const _0x1810aa = await _0x58f674.json();
+        if (_0x1810aa && String(_0x1810aa.code) === "40001") {
+          this.signOut(false);
+          throw new Error("Unauthorized");
+        }
+      } catch (_0x22a15f) {}
+      if (!_0x34d785.ok) {
+        throw new Error("HTTP Error: " + _0x34d785.status);
+      }
+      return await _0x34d785.json();
+    } catch (_0x29e0e9) {
+      this.currentApiHost = null;
+      this.apiHostPromise = null;
+      throw _0x29e0e9;
+    }
+  },
+  'generateUUID'() {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) {
+      return crypto.randomUUID();
+    }
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, _0x1a3815 => {
+      const _0x5604b3 = Math.random() * 0x10 | 0x0;
+      return (_0x1a3815 === 'x' ? _0x5604b3 : _0x5604b3 & 0x3 | 0x8).toString(0x10);
+    });
+  },
+  'getDeviceId'() {
+    let _0x55003c = localStorage.getItem("cm_device_id");
+    if (!_0x55003c) {
+      _0x55003c = this.generateUUID();
+      localStorage.setItem("cm_device_id", _0x55003c);
+    }
+    return _0x55003c;
+  },
+  async 'initPortal'() {
+    try {
+      const _0x5cd77a = await this.probeApi();
+      if (_0x5cd77a) {
+        this.renderServerSelect();
+        this.renderCategorySkeleton();
+        this.renderSkeleton();
+        if (!localStorage.getItem("selectedServer")) {
+          localStorage.setItem("selectedServer", '23');
+        }
+        if (this.token) {
+          await Promise.all([this.loadUserLevel(), this.loadRecentGames()]);
+          this.startStatsPolling();
+        }
+        await Promise.all([this.loadCategories(), this.loadGames()]);
+        this.filterEmptyCategories();
+        this.renderCategories();
+        this.applyFilter();
+      } else {
+        document.getElementById("game-grid").innerHTML = "<div class=\"col-span-full text-center text-red-400 py-20\">Unable to connect to server.</div>";
+      }
+    } catch (_0x534c30) {
+      console.error("Init Error:", _0x534c30);
+    }
+  },
+  'renderUserArea'() {
+    const _0x5ad17a = this.token;
+    this.renderServerSelect();
+    const _0x23d213 = _0x5ad17a ? "<div class=\"flex flex-col items-end leading-none justify-center h-10 px-1\"><span class=\"text-[9px] text-gray-500 font-black uppercase tracking-tighter mb-1\">LVL " + this.userLevel + "</span><span class=\"text-xs font-black text-[#9ff2c7] tracking-tight\">" + (this.timeLeft || "--:--") + "</span></div>" : '';
+    const _0x5634e0 = _0x5ad17a ? "<button onclick=\"App.signOut()\" class=\"w-10 h-10 flex items-center justify-center bg-red-500/10 hover:bg-red-500/20 rounded-xl transition-all group border border-red-500/10\"><i data-lucide=\"power\" class=\"w-4 h-4 text-red-500/70 group-hover:text-red-500 group-hover:scale-110 transition-all\"></i></button>" : "<button onclick=\"App.showLogin()\" class=\"h-10 px-6 bg-[#9ff2c7] hover:bg-[#7fe0ac] text-white text-[11px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-300/20 active:scale-95\">Sign In</button>";
+    const _0x24b520 = (_0x55aaa7, _0x42592e) => {
+      const _0x26dd4a = document.getElementById(_0x55aaa7);
+      if (_0x26dd4a) {
+        _0x26dd4a.innerHTML = _0x42592e;
+      }
+    };
+    _0x24b520("stats-area-mobile", _0x23d213);
+    _0x24b520("stats-area-desktop", _0x23d213);
+    _0x24b520("user-area-mobile", _0x5634e0);
+    _0x24b520("user-area-desktop", _0x5634e0);
+    lucide.createIcons();
+  },
+  'renderServerSelect'() {
+    const _0x1337d6 = document.getElementById("server-select-container");
+    if (!this.token) {
+      if (_0x1337d6) {
+        _0x1337d6.innerHTML = '';
+      }
+      return;
+    }
+    const _0xa127a3 = localStorage.getItem("selectedServer") || '23';
+    const _0x10a10c = "<div class=\"relative flex items-center h-10 bg-gray-800 rounded-xl border border-white/5 p-0.5 shadow-inner\"><select id=\"nav-server-select\" onchange=\"App.handleServerChange(this.value)\" class=\"bg-transparent border-none pl-3 pr-8 h-full text-[11px] font-black text-gray-300 outline-none cursor-pointer appearance-none uppercase tracking-widest [&>option]:bg-[#0f2e26] [&>option]:text-white\"><option value=\"21\" " + (_0xa127a3 === '21' ? "selected" : '') + ">South America</option><option value=\"22\" " + (_0xa127a3 === '22' ? "selected" : '') + ">US West</option><option value=\"23\" " + (_0xa127a3 === '23' ? "selected" : '') + ">US East</option><option value=\"3\" " + (_0xa127a3 === '3' ? "selected" : '') + ">Asia</option><option value=\"4\" " + (_0xa127a3 === '4' ? "selected" : '') + ">Europe</option></select><i data-lucide=\"chevron-down\" class=\"absolute right-2.5 w-3 h-3 text-gray-500 pointer-events-none\"></i></div>";
+    if (_0x1337d6) {
+      _0x1337d6.innerHTML = _0x10a10c;
+    }
+    lucide.createIcons();
+  },
+  async 'handleServerChange'(_0x461a4b) {
+    localStorage.setItem("selectedServer", _0x461a4b);
+    if (this.token) {
+      await this.loadUserLevel();
+      this.applyFilter();
+    }
+  },
+  'renderCategorySkeleton'() {
+    const _0x42f92e = document.getElementById("category-bar");
+    if (_0x42f92e) {
+      _0x42f92e.innerHTML = Array(0x6).fill(0x0).map(() => "<div class=\"skeleton h-8 w-20 rounded-full flex-shrink-0 opacity-40\"></div>").join('');
+    }
+  },
+  'renderSkeleton'() {
+    const _0x37529e = document.getElementById("game-grid");
+    if (_0x37529e) {
+      _0x37529e.innerHTML = Array(0x12).fill(0x0).map(() => "<div class=\"game-card-item opacity-40\"><div class=\"skeleton w-full h-full\"></div><div class=\"absolute bottom-4 left-4 right-4\"><div class=\"skeleton h-4 w-2/3 mb-2 rounded\"></div><div class=\"skeleton h-3 w-1/3 rounded\"></div></div></div>").join('');
+    }
+  },
+  async 'loadUserLevel'() {
+    try {
+      const _0xb80b29 = await this.customFetch("/phone/list");
+      if (_0xb80b29.code === 0x0 && _0xb80b29.data?.["list"]?.["length"] > 0x0) {
+        this.userLevel = Math.max(..._0xb80b29.data.list.map(_0x5479b8 => _0x5479b8.level || 0x0));
+        this.timeLeft = _0xb80b29.data.list[0x0].time_left || "0h 0m";
+        this.renderUserArea();
+      }
+    } catch (_0x5d370f) {
+      console.error("Error loading stats:", _0x5d370f);
+    }
+  },
+  async 'loadCategories'() {
+    try {
+      const _0x46a9d0 = await this.customFetch("/game/category");
+      if (_0x46a9d0.code === 0x0 && _0x46a9d0.data?.["list"]?.["length"] > 0x0) {
+        this.categories = _0x46a9d0.data.list;
+      }
+    } catch (_0x53effc) {
+      console.error("Error loading categories:", _0x53effc);
+    }
+  },
+  async 'loadGames'() {
+    this.isLoading = true;
+    this.renderSkeleton();
+    try {
+      const _0x25a7f8 = await this.customFetch(this.token ? "/game/list" : "/game/guest_list");
+      if (_0x25a7f8.code === 0x0 && _0x25a7f8.data?.["list"]) {
+        this.rawGames = _0x25a7f8.data.list.map(_0x6b68c => ({
+          'id': _0x6b68c.package_name,
+          'title': _0x6b68c.title,
+          'icon': _0x6b68c.icon_url,
+          'status': _0x6b68c.status,
+          'categories': _0x6b68c.categories || [],
+          'isHigh': _0x6b68c.is_high || false,
+          'unlimit': _0x6b68c.unlimit || false
+        }));
+      }
+    } catch (_0x30a97a) {
+      document.getElementById("game-grid").innerHTML = "<div class=\"col-span-full text-center text-red-400 py-20\">Failed to load games.</div>";
+    } finally {
+      this.isLoading = false;
+      this.applyFilter();
+    }
+  },
+  'filterEmptyCategories'() {
+    if (this.categories.length === 0x0 || this.rawGames.length === 0x0) {
+      return;
+    }
+    const _0x3c072b = new Set();
+    this.rawGames.forEach(_0x5bffef => {
+      (_0x5bffef.categories || []).forEach(_0x2f9839 => {
+        _0x3c072b.add(String(_0x2f9839));
+      });
+    });
+    this.categories = this.categories.filter(_0x2c8389 => _0x2c8389.key === "all" || _0x3c072b.has(String(_0x2c8389.key)));
+    this.categories.sort((_0x455fa8, _0x3476a8) => _0x455fa8.key === "all" ? -0x1 : _0x3476a8.key === "all" ? 0x1 : 0x0);
+    if (this.categories.length > 0x0 && this.activeCategory === "all" && !this.categories.some(_0x427ae8 => _0x427ae8.key === "all")) {
+      this.activeCategory = this.categories[0x0].key;
+    }
+  },
+  'renderCategories'() {
+    const _0x1d4299 = document.getElementById("category-bar");
+    if (!_0x1d4299 || this.categories.length === 0x0) {
+      return;
+    }
+    _0x1d4299.innerHTML = this.categories.map(_0x5aefa9 => "<button onclick=\"App.filterByCategory('" + _0x5aefa9.key + "')\" class=\"category-btn " + (this.activeCategory === String(_0x5aefa9.key) ? "active" : '') + " px-4 py-1.5 rounded-full text-sm whitespace-nowrap transition\" data-category=\"" + _0x5aefa9.key + "\">" + _0x5aefa9.name + "</button>").join('');
+  },
+  'filterByCategory'(_0x25f728) {
+    this.activeCategory = _0x25f728;
+    document.querySelectorAll(".category-btn").forEach(_0xa29840 => {
+      _0xa29840.classList.toggle("active", _0xa29840.getAttribute("data-category") === _0x25f728);
+    });
+    this.applyFilter();
+  },
+  'handleSearch'(_0x2773d2) {
+    this.searchQuery = _0x2773d2.toLowerCase();
+    if (this.searchTimer) {
+      clearTimeout(this.searchTimer);
+    }
+    this.searchTimer = setTimeout(() => this.applyFilter(), 0x96);
+  },
+  'applyFilter'() {
+    this.filteredGames = this.rawGames.filter(_0x4ebf23 => {
+      if (_0x4ebf23.status !== 0x1) {
+        return false;
+      }
+      if (_0x4ebf23.isHigh && this.userLevel !== 0x3) {
+        return false;
+      }
+      const _0x4c46b4 = this.activeCategory === "all" || _0x4ebf23.categories.includes(this.activeCategory) || _0x4ebf23.categories.includes(parseInt(this.activeCategory));
+      const _0x599bfd = _0x4ebf23.title.toLowerCase().includes(this.searchQuery);
+      return _0x4c46b4 && _0x599bfd;
+    });
+    this.renderGrid();
+  },
+  'renderGrid'() {
+    const _0x3da353 = document.getElementById("game-grid");
+    if (!_0x3da353) {
+      return;
+    }
+    const _0x50a1c = this.filteredGames.map(_0x4ff950 => _0x4ff950.id).join(',');
+    if (this.lastRenderedKey === _0x50a1c) {
+      return;
+    }
+    this.lastRenderedKey = _0x50a1c;
+    if (this.filteredGames.length === 0x0) {
+      _0x3da353.innerHTML = "<div class=\"col-span-full text-center text-gray-500 py-20\">No games found.</div>";
+      return;
+    }
+    _0x3da353.innerHTML = this.filteredGames.map(_0x168f2c => "<div class=\"game-card-item group\" onclick=\"App.showGameDetails('" + _0x168f2c.id + "')\"><img src=\"" + _0x168f2c.icon + "\" class=\"card-banner\" onerror=\"this.src='https://cdn.jsdelivr.net/gh/Bubba7004/minty-proxy-assets@main/assets/minty.svg'\"><div class=\"card-overlay\"><h3 class=\"text-sm font-black text-white leading-tight truncate\">" + _0x168f2c.title + "</h3><p class=\"text-[10px] text-gray-400 font-bold uppercase tracking-widest\">Cloud Play</p></div>" + (_0x168f2c.isHigh ? "<div class=\"card-badge\">Pro</div>" : '') + (_0x168f2c.status === 0x4 ? "<div class=\"card-badge\" style=\"background: rgba(239, 68, 68, 0.9)\">Maint</div>" : '') + "</div>").join('');
+    lucide.createIcons();
+  },
+  async 'loadRecentGames'() {
+    if (!this.token) {
+      return;
+    }
+    try {
+      const _0x27368c = parseInt(localStorage.getItem("selectedServer") || '23');
+      let _0x54f025 = "sgp";
+      if ([0x15, 0x16, 0x17].includes(_0x27368c)) {
+        _0x54f025 = 'us';
+      } else {
+        if (_0x27368c === 0x4) {
+          _0x54f025 = 'eu';
+        }
+      }
+      const _0x1ca7ea = await this.customFetch("/game/record?select_server=" + _0x54f025);
+      if (_0x1ca7ea.code === 0x0 && _0x1ca7ea.data?.["list"]?.["length"] > 0x0) {
+        this.recentGames = _0x1ca7ea.data.list.map(_0x35cca4 => ({
+          'id': _0x35cca4.package_name,
+          'title': _0x35cca4.title,
+          'icon': _0x35cca4.icon_url,
+          'is_high': _0x35cca4.is_high || false,
+          'status': _0x35cca4.status
+        }));
+        this.renderRecentGames();
+      } else {
+        document.getElementById("recent-games-section").classList.add("hidden");
+      }
+    } catch (_0x178f2c) {
+      console.error("Error loading recent games:", _0x178f2c);
+    }
+  },
+  'renderRecentGames'() {
+    const _0x1bfdd0 = document.getElementById("recent-games-section");
+    const _0x39fba9 = document.getElementById("recent-games-grid");
+    if (!_0x1bfdd0 || !_0x39fba9 || this.recentGames.length === 0x0) {
+      if (_0x1bfdd0) {
+        _0x1bfdd0.classList.add("hidden");
+      }
+      return;
+    }
+    _0x1bfdd0.classList.remove("hidden");
+    _0x39fba9.innerHTML = this.recentGames.slice(0x0, 0x4).map((_0x336a31, _0x45ee62) => "<div class=\"game-card-item group " + (_0x45ee62 === 0x0 ? "first-game-glow" : '') + "\" onclick=\"App.showGameDetails('" + _0x336a31.id + "')\"><img src=\"" + _0x336a31.icon + "\" class=\"card-banner\" onerror=\"this.src='https://cdn.jsdelivr.net/gh/Bubba7004/minty-proxy-assets@main/assets/minty.svg'\"><div class=\"card-overlay\"><h3 class=\"text-sm font-black text-white leading-tight truncate\">" + _0x336a31.title + "</h3><p class=\"text-[10px] text-gray-400 font-bold uppercase tracking-widest\">Recently</p></div>" + (_0x336a31.is_high ? "<div class=\"card-badge\">Pro</div>" : '') + "</div>").join('');
+    lucide.createIcons();
+  },
+  async 'showGameDetails'(_0x12a59a) {
+    const _0x1d7a10 = document.getElementById("game-modal");
+    const _0x3f7ea7 = document.getElementById("modal-content");
+    _0x1d7a10.style.display = "block";
+    _0x3f7ea7.innerHTML = "<div class=\"flex flex-col items-center justify-center py-20 text-gray-400\"><div class=\"loading-spinner w-8 h-8 border-4 border-[#9ff2c7] border-t-transparent rounded-full mb-4\"></div><p>Loading details...</p></div>";
+    try {
+      const _0x451e4e = await this.customFetch("/game/info?pkg=" + _0x12a59a);
+      if (_0x451e4e.code === 0x0 && _0x451e4e.data) {
+        const _0x4905bd = _0x451e4e.data;
+        const _0x2e9bb8 = _0x4905bd.i18n || {};
+        const _0x38768b = _0x2e9bb8.title || _0x4905bd.title;
+        const _0x4be97f = _0x2e9bb8.icon || _0x4905bd.icon_url;
+        const _0x408cf8 = (_0x2e9bb8.desc || '').replace(/\n/g, "<br>");
+        _0x3f7ea7.innerHTML = "<div class=\"flex items-start gap-4\"><img src=\"" + _0x4be97f + "\" class=\"w-20 h-20 rounded-2xl shadow-xl border border-gray-700\"><div class=\"flex-1 min-w-0\"><h2 class=\"text-xl font-bold text-white mb-1 truncate\">" + _0x38768b + "</h2><p class=\"text-sm text-gray-400 truncate\">" + (_0x2e9bb8.categoryList || []).join(" / ") + "</p><div class=\"mt-2 flex gap-2\">" + (_0x4905bd.is_high ? "<span class=\"bg-yellow-500/20 text-yellow-500 text-[10px] font-bold px-2 py-0.5 rounded-full border border-yellow-500/30\">PRO</span>" : '') + (_0x4905bd.status === 0x4 ? "<span class=\"bg-red-500/20 text-red-500 text-[10px] font-bold px-2 py-0.5 rounded-full border border-red-500/30\">MAINTENANCE</span>" : '') + "</div></div><button onclick=\"App.closeModal()\" class=\"p-2 hover:bg-gray-800 rounded-full transition -mt-2 -mr-2\"><i data-lucide=\"x\" class=\"w-5 h-5 text-gray-500\"></i></button></div>" + (_0x2e9bb8.screenshots?.["length"] ? "<div class=\"flex gap-3 overflow-x-auto no-scrollbar py-1 snap-x snap-mandatory touch-pan-x\">" + _0x2e9bb8.screenshots.map(_0x130585 => "<img src=\"" + _0x130585 + "\" class=\"h-32 rounded-lg border border-gray-800 snap-start shrink-0\">").join('') + "</div>" : '') + "<div class=\"text-sm text-gray-300 leading-relaxed max-h-48 overflow-y-auto pr-2 custom-scrollbar\">" + _0x408cf8 + "</div><div class=\"mt-2\"><button onclick=\"App.handlePlay('" + _0x4905bd.package_name + "', " + _0x4905bd.status + ")\" id=\"play-btn-el\" class=\"w-full bg-[#9ff2c7] hover:bg-[#7fe0ac] text-white font-bold py-3.5 rounded-2xl transition shadow-lg flex items-center justify-center gap-2\"><i data-lucide=\"play\" class=\"w-5 h-5 fill-current\"></i>Play Now</button></div>";
+        lucide.createIcons();
+      }
+    } catch (_0x5b5f28) {
+      _0x3f7ea7.innerHTML = "<div class=\"text-center text-red-400 py-10\">Error loading details.</div>";
+    }
+  },
+  'closeModal'() {
+    document.getElementById("game-modal").style.display = "none";
+  },
+  'showLogin'() {
+    document.getElementById("login-modal").style.display = "block";
+    document.getElementById("server-select").value = localStorage.getItem("selectedServer") || '23';
+    const _0x1fc8c6 = document.getElementById("login-password");
+    _0x1fc8c6.type = "password";
+    document.querySelector("#pw-toggle-btn i").setAttribute("data-lucide", "eye");
+    lucide.createIcons();
+  },
+  'closeLoginModal'() {
+    document.getElementById("login-modal").style.display = "none";
+  },
+  'showSignupModal'() {
+    document.getElementById("signup-modal").style.display = "block";
+    lucide.createIcons();
+  },
+  'closeSignupModal'() {
+    document.getElementById("signup-modal").style.display = "none";
+  },
+  'togglePasswordVisibility'() {
+    const _0x4ade65 = document.getElementById("login-password");
+    const _0x15fc3d = document.querySelector("#pw-toggle-btn i");
+    const _0x2aecf6 = _0x4ade65.type === "password";
+    _0x4ade65.type = _0x2aecf6 ? "text" : "password";
+    _0x15fc3d.setAttribute("data-lucide", _0x2aecf6 ? "eye-off" : "eye");
+    lucide.createIcons();
+  },
+  async 'handleLogin'() {
+    const _0x103fcc = document.getElementById("login-email").value;
+    const _0x398d50 = document.getElementById("login-password").value;
+    const _0x2a9038 = document.getElementById("server-select").value;
+    const _0x4fc834 = document.getElementById("login-submit-btn");
+    if (!_0x103fcc || !_0x398d50) {
+      alert("Enter credentials");
+      return;
+    }
+    try {
+      _0x4fc834.disabled = true;
+      _0x4fc834.innerHTML = "<div class=\"loading-spinner w-5 h-5 border-2 border-white border-t-transparent rounded-full mx-auto\"></div>";
+      const _0x10f868 = await this.customFetch("/login/pwd", {
+        'method': "POST",
+        'body': JSON.stringify({
+          'email': _0x103fcc,
+          'password': _0x398d50
+        })
+      });
+      if (_0x10f868.code === 0x0 && _0x10f868.data?.["token"]) {
+        localStorage.setItem("cm_auth_token", _0x10f868.data.token);
+        localStorage.setItem("selectedServer", _0x2a9038);
+        location.reload();
+      } else {
+        alert("Login failed: " + (_0x10f868.message || "Error"));
+      }
+    } catch (_0x2a7571) {
+      alert("Error during login.");
+    } finally {
+      _0x4fc834.disabled = false;
+      _0x4fc834.innerHTML = "Sign In";
+    }
+  },
+  'signOut'(_0x365720 = true) {
+    if (_0x365720 && !window.confirm("Logout?")) {
+      return;
+    }
+    localStorage.removeItem("cm_auth_token");
+    location.reload();
+  },
+  'startStatsPolling'() {
+    if (this.statsInterval) {
+      return;
+    }
+    this.statsInterval = setInterval(() => {
+      if (this.token) {
+        this.loadUserLevel();
+      } else {
+        this.stopStatsPolling();
+      }
+    }, 0x7530);
+  },
+  'stopStatsPolling'() {
+    if (this.statsInterval) {
+      clearInterval(this.statsInterval);
+      this.statsInterval = null;
+    }
+  },
+  async 'handlePlay'(_0x4e5f64, _0x1d0e8f) {
+    if (!this.token) {
+      if (window.confirm("Login required to play. Login now?")) {
+        this.showLogin();
+      }
+      return;
+    }
+    if (_0x1d0e8f === 0x4) {
+      alert("Under maintenance.");
+      return;
+    }
+    if (!this.timeLeft || this.timeLeft === "0h 0m") {
+      alert("No time left.");
+      return;
+    }
+    const _0x5589d5 = document.getElementById("play-btn-el");
+    const _0x1a4ea3 = _0x5589d5.innerHTML;
+    try {
+      _0x5589d5.disabled = true;
+      _0x5589d5.innerHTML = "<div class=\"loading-spinner w-5 h-5 border-2 border-white border-t-transparent rounded-full\"></div><span>Connecting...</span>";
+      const _0x15a9ac = await this.customFetch("/phone/list");
+      if (_0x15a9ac.code === 0x0 && _0x15a9ac.data?.["list"]?.["length"] > 0x0) {
+        const _0x4012eb = await this.customFetch("/phone/connect", {
+          'method': "POST",
+          'body': JSON.stringify({
+            'android_id': _0x15a9ac.data.list[0x0].android_id,
+            'game_name': _0x4e5f64,
+            'screen_res': "720x1280",
+            'server_id': parseInt(localStorage.getItem("selectedServer") || '23'),
+            'params': JSON.stringify({
+              'language': 'en',
+              'locale': 'us'
+            }),
+            'ad_unblock': false
+          })
+        });
+        if (_0x4012eb.code === 0x0 && _0x4012eb.data) {
+          this.closeModal();
+          if (_0x4012eb.data.android_instance_id) {
+            this.launchGameAction(_0x4012eb.data.sid);
+          } else if (_0x4012eb.data.position) {
+            this.showQueue(_0x4e5f64, _0x4012eb.data, _0x15a9ac.data.list[0x0].android_id);
+          }
+        } else {
+          alert("Fail: " + _0x4012eb.message);
+          _0x5589d5.disabled = false;
+          _0x5589d5.innerHTML = _0x1a4ea3;
+        }
+      } else {
+        alert("No device.");
+        _0x5589d5.disabled = false;
+        _0x5589d5.innerHTML = _0x1a4ea3;
+      }
+    } catch (_0x41cf9b) {
+      console.error(_0x41cf9b);
+      alert("Error.");
+      _0x5589d5.disabled = false;
+      _0x5589d5.innerHTML = _0x1a4ea3;
+    }
+  },
+  'showQueue'(_0x4bdfdd, _0x1fae29, _0x1fcd9a) {
+    this.currentPkg = _0x4bdfdd;
+    const _0xdb53e9 = document.getElementById("queue-modal");
+    _0xdb53e9.style.display = "block";
+    this.updateQueueUI(_0x1fae29);
+    this.startQueuePolling(_0x4bdfdd, _0x1fcd9a);
+  },
+  'updateQueueUI'(_0x395a1e) {
+    document.getElementById("queue-pos").innerText = _0x395a1e.position || '--';
+    document.getElementById("queue-time").innerText = _0x395a1e.waiting_time ? Math.ceil(_0x395a1e.waiting_time / 0x3c) + 'm' : '--';
+  },
+  'startQueuePolling'(_0x86a55e, _0x49589d) {
+    if (this.queueInterval) {
+      clearInterval(this.queueInterval);
+    }
+    this.queueInterval = setInterval(async () => {
+      try {
+        const _0x35443c = await this.customFetch("/phone/connect", {
+          'method': "POST",
+          'body': JSON.stringify({
+            'android_id': _0x49589d,
+            'game_name': _0x86a55e,
+            'screen_res': "720x1280",
+            'server_id': parseInt(localStorage.getItem("selectedServer") || '23'),
+            'params': JSON.stringify({
+              'language': 'en',
+              'locale': 'us'
+            }),
+            'ad_unblock': false
+          })
+        });
+        if (_0x35443c.code === 0x0 && _0x35443c.data) {
+          if (_0x35443c.data.android_instance_id) {
+            this.stopQueuePolling();
+            this.closeQueueModal();
+            this.launchGameAction(_0x35443c.data.sid);
+          } else {
+            this.updateQueueUI(_0x35443c.data);
+          }
+        }
+      } catch (_0x3a1d09) {
+        console.error("Queue error:", _0x3a1d09);
+      }
+    }, 0x1388);
+  },
+  'stopQueuePolling'() {
+    if (this.queueInterval) {
+      clearInterval(this.queueInterval);
+      this.queueInterval = null;
+    }
+  },
+  async 'cancelQueue'() {
+    const _0x48ac2a = this.currentPkg;
+    this.stopQueuePolling();
+    this.closeQueueModal();
+    if (_0x48ac2a) {
+      try {
+        await this.customFetch("/phone/disconnect", {
+          'method': "POST",
+          'body': JSON.stringify({
+            'game_name': _0x48ac2a
+          })
+        });
+      } catch (_0x255242) {}
+    }
+  },
+  'closeQueueModal'() {
+    document.getElementById("queue-modal").style.display = "none";
+  },
+  'launchGameAction'(_0x17c126) {
+    const _0xa7ae2 = {
+      'sid': _0x17c126,
+      'quality': 'SD',
+      'timestamp': Date.now()
+    };
+    localStorage.setItem("cm_launch_data", JSON.stringify(_0xa7ae2));
+    window.location.assign("./play-261014.html");
+  }
+};
+document.addEventListener("DOMContentLoaded", () => {
+  window.App.init();
+});
+  </script>
+</body>
+</html>

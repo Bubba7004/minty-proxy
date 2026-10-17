@@ -1,0 +1,4235 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,user-scalable=no,initial-scale=1,minimum-scale=1,maximum-scale=1">
+  <title>minty - Play</title>
+  <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/gh/Bubba7004/minty-proxy-assets@main/assets/minty.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.12/dist/vue.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/socket.io-client@2.4.0/dist/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@0.26.0/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.2/dist/sweetalert2.all.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/adapterjs@0.15.5/publish/adapter.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/loglevel@1.9.2/dist/loglevel.min.js"></script>
+
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.2/dist/sweetalert2.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.26.2/themes/material-ui.css" rel="stylesheet">
+  <style>
+    html,
+    body {
+      margin: 0;
+      background: #000000;
+      height: 100%;
+    }
+
+    .container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    .container.has-a-div {
+      padding: 0 180px 140px 180px;
+      box-sizing: border-box
+    }
+
+    .container.hide-vertical {
+      padding: 120px 0 120px 0 !important;
+      box-sizing: border-box
+    }
+
+    * {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+
+    .rotate {
+      transform: rotate(90deg);
+      transform-origin: 28.13% 50%;
+    }
+
+    .spinner {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: conic-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.0), rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 1));
+      mask-image: radial-gradient(circle, rgba(0, 0, 0, 0) 58%, rgba(0, 0, 0, 1) 59%);
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .input-div {
+    height: 3rem;
+    position: fixed;
+    width: 600px;
+    right: 0;
+    left: 0;
+    margin: auto;
+    pointer-events: auto;
+    z-index: 99998;
+    /*overflow: hidden;*/
+}
+
+
+.input-div:focus-within::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    width: calc(100% + 4px);
+    height: calc(100% + 4px);
+    border-radius: 1.5rem;
+    background: linear-gradient(90deg, #9ff2c7, #ffffff, #9ff2c7);
+    background-size: 200% 100%;
+    animation: borderMarquee 1.5s linear 1.5s;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.5;
+}
+
+@keyframes borderMarquee {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.input-div_input {
+    display: block;
+    width: 100%;
+    height: 100%;
+    outline: none;
+    border-radius: 1.5rem;
+    padding: 0 6rem 0 1.5rem;
+    font-size: 1.4rem;
+    box-sizing: border-box;
+    position: relative;
+    background: #fff;
+    z-index: 2;
+    opacity: 0.7;
+}
+
+.input-div_div {
+    position: absolute;
+    width: 6rem;
+    right: 0;
+    bottom: 0;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 3;
+}
+
+.input-div_div_button {
+    background-color: #9ff2c7;
+    width: 4rem;
+    height: 1.8rem;
+    border: 0;
+    border-radius: 0.9rem;
+    opacity: 1;
+    cursor: pointer;
+}
+
+
+    /* loading page */
+    .loading {
+      width: 100vw;
+      height: 100vh;
+      background: #0f2e26;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      position: fixed;
+      top: 0;
+      left: 0;
+    }
+
+    .a-div-vertical {
+      min-height: 600px;
+      width: 300px;
+      background: rgba(38, 37, 43, 1);
+      position: fixed;
+      z-index: 9996;
+      top: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-flow: column;
+      align-items: center;
+    }
+
+    .a-div-horizontal {
+      left: 50%;
+      transform: translateX(-50%);
+      height: 120px;
+      min-width: 720px;
+      background: rgba(38, 37, 43, 1);
+      position: fixed;
+      z-index: 9996;
+      overflow: hidden;
+      display: flex;
+      /*flex-flow: column;*/
+      justify-content: center;
+      align-items: center;
+    }
+
+    .a-div-placeholder {
+      white-space: pre-line;
+      word-break: break-word;
+      width: 100%;
+      position: absolute;
+      transform: translateY(-50%);
+      top: 50%;
+      padding: 0 1rem;
+      box-sizing: border-box;
+      text-align: center;
+      font-size: 1rem;
+      z-index: -1;
+      color: #929295;
+    }
+
+    .a-div-video {
+      position: fixed;
+      height: 168px;
+      width: 300px;
+      z-index: 9997;
+      bottom: 10px;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: rgba(38, 37, 43, 1);
+    }
+
+    @-webkit-keyframes animation2 {
+      0% {
+        width: 0;
+      }
+
+      50% {
+        width: 100%;
+      }
+
+      100% {
+        width: 0
+      }
+    }
+
+    @-moz-keyframes animation2 {
+      0% {
+        width: 0
+      }
+
+      50% {
+        width: 100%;
+      }
+
+      100% {
+        width: 0
+      }
+    }
+
+    @-o-keyframes animation2 {
+      0% {
+        width: 0
+      }
+
+      50% {
+        width: 100%;
+      }
+
+      100% {
+        width: 0
+      }
+    }
+
+    @keyframes animation2 {
+      0% {
+        width: 0
+      }
+
+      50% {
+        width: 100%;
+      }
+
+      100% {
+        width: 0
+      }
+    }
+
+    @-webkit-keyframes animation1 {
+      0% {
+        height: 0
+      }
+
+      50% {
+        height: 100%;
+      }
+
+      100% {
+        height: 0
+      }
+    }
+
+    @-moz-keyframes animation1 {
+      0% {
+        height: 0
+      }
+
+      50% {
+        height: 100%;
+      }
+
+      100% {
+        height: 0
+      }
+    }
+
+    @-o-keyframes animation1 {
+      0% {
+        height: 0
+      }
+
+      50% {
+        height: 100%;
+      }
+
+      100% {
+        height: 0
+      }
+    }
+
+    @keyframes animation1 {
+      0% {
+        height: 0
+      }
+
+      50% {
+        height: 100%;
+      }
+
+      100% {
+        height: 0
+      }
+    }
+
+    .load {
+      animation: animation1 2.5s;
+      -moz-animation: animation1 2.5s;
+      -webkit-animation: animation1 2.5s;
+      -o-animation: animation1 2.5s;
+      background: #40dbfa;
+      /*background: #000;*/
+      height: 0;
+      width: 10%;
+      top: 0;
+      animation-iteration-count: infinite;
+    }
+
+    .load-h {
+      animation: animation2 2.5s;
+      -moz-animation: animation2 2.5s;
+      -webkit-animation: animation2 2.5s;
+      -o-animation: animation2 2.5s;
+      background: #40dbfa;
+      /*background: #000;*/
+      height: 10%;
+      width: 0;
+      animation-iteration-count: infinite;
+    }
+
+    .nenly {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      z-index: 10000006;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #h2 {
+      font-size: 50px;
+      color: rgb(64, 219, 250);
+      transition: color 1s;
+    }
+
+    @-webkit-keyframes opacity_none {
+      0% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0;
+        display: none;
+      }
+    }
+
+    @-moz-keyframes opacity_none {
+      0% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0;
+        display: none;
+      }
+    }
+
+    @-o-keyframes opacity_none {
+      0% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0;
+        display: none;
+      }
+    }
+
+    @keyframes opacity_none {
+      0% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0;
+        display: none;
+      }
+    }
+
+    .yellow {
+      color: #ffeb00 !important;
+    }
+
+    .red {
+      color: #fc4a5e !important;
+    }
+
+    .green {
+      color: #6cff00 !important;
+    }
+
+    #remote-video {
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+    }
+
+    .video {
+      -webkit-filter: contrast(1.06) saturate(1.06);
+      -moz-filter: contrast(1.06) saturate(1.06);
+      -o-filter: contrast(1.06) saturate(1.06);
+      -ms-filter: "contrast(1.06) saturate(1.06)";
+      filter: contrast(1.06) saturate(1.06);
+    }
+
+    .startGame {
+      display: none;
+    }
+
+    #canvasCoc {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 899;
+    }
+
+    .game {
+      position: relative;
+      height: 100%;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .btn-info {
+      display: inline-block;
+      font-weight: 800;
+      text-align: center;
+      vertical-align: middle;
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+      width: 275px;
+      height: 75px;
+      /*transition: color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out, box-shadow .15s ease-in-out;*/
+      color: #000;
+      background: url("./run-site/images/enter_game_btn_1.png") no-repeat;
+      background-position: center center;
+      background-size: cover;
+      /*border-color: #17a2b8;*/
+      /*padding: .5rem 1rem;*/
+      line-height: 80px;
+      border: 0 solid #fff;
+      font-size: 1.25rem;
+      /*border-radius: .3rem;*/
+    }
+
+    .btn-info:active {
+      background: url("./run-site/images/enter_game_btn_2.png") no-repeat;
+      background-position: center center;
+      background-size: cover;
+    }
+
+    .input-div {
+      height: 3rem;
+      position: fixed;
+      width: 600px;
+      right: 0;
+      left: 0;
+      margin: auto;
+      pointer-events: auto;
+      z-index: 99998;
+      /*overflow: hidden;*/
+    }
+
+    .input-div:focus-within::before {
+      content: '';
+      position: absolute;
+      top: -2px;
+      left: -2px;
+      width: calc(100% + 4px);
+      height: calc(100% + 4px);
+      border-radius: 1.5rem;
+      background: linear-gradient(90deg, #9ff2c7, #ffffff, #9ff2c7);
+      background-size: 200% 100%;
+      animation: borderMarquee 1.5s linear 1.5s;
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.5;
+    }
+
+    @keyframes borderMarquee {
+      0% {
+        background-position: 200% 0;
+      }
+
+      100% {
+        background-position: -200% 0;
+      }
+    }
+
+    .input-div_input {
+      display: block;
+      width: 100%;
+      height: 100%;
+      outline: none;
+      border-radius: 1.5rem;
+      padding: 0 6rem 0 1.5rem;
+      font-size: 1.4rem;
+      box-sizing: border-box;
+      position: relative;
+      background: #fff;
+      z-index: 2;
+      opacity: 0.7;
+    }
+
+    .input-div_div {
+      position: absolute;
+      width: 6rem;
+      right: 0;
+      bottom: 0;
+      height: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 3;
+    }
+
+    .input-div_div_button {
+      background-color: #9ff2c7;
+      width: 4rem;
+      height: 1.8rem;
+      border: 0;
+      border-radius: 0.9rem;
+      opacity: 1;
+      cursor: pointer;
+    }
+
+    .swal2-container {
+      z-index: 99999;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .swal2-actions {
+      justify-content: center !important;
+    }
+
+    body.swal2-height-auto {
+      height: 100% !important;
+    }
+
+    .game-pad {
+      text-align: center;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 99999;
+      /*background-color: #fff;*/
+    }
+
+    .game-pad-rocker {
+      text-align: center;
+      position: fixed;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 100000;
+      pointer-events: none;
+    }
+
+    .game-pad_large_btn {
+      position: absolute;
+      width: 6rem;
+      height: 2.5rem;
+      line-height: 2.5rem;
+      background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0) 30%, #828B9E 100%);
+      border-radius: 5px;
+      border: 1px solid #828B9E;
+      color: #828B9E;
+      opacity: 0.8;
+    }
+
+    .game-pad_large_btn:active {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .game-pad_menu_btn {
+      position: absolute;
+      width: 2.5rem;
+      height: 2.5rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(circle at center, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0) 30%, #828B9E 100%);
+      border-radius: 50%;
+      border: 1px solid #828B9E;
+      opacity: 0.8;
+    }
+
+    .game-pad_menu_btn:active {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .game-pad_arrow_btn {
+      position: absolute;
+      border-radius: 2px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(ellipse at center, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0) 30%, #828B9E 100%);
+      border: 1px solid #828B9E;
+      opacity: 0.8;
+    }
+
+    .game-pad_arrow_btn:active {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .game-pad_play_btn {
+      color: #828B9E;
+      position: absolute;
+      background: radial-gradient(circle at center, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0) 30%, #828B9E 100%);
+      border-radius: 50%;
+      width: 3rem;
+      height: 3rem;
+      line-height: 3rem;
+      border: 1px solid #828B9E;
+      opacity: 0.8;
+    }
+
+    .game-pad_play_btn:active {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .keyboard {
+      position: fixed;
+      z-index: 1000;
+      pointer-events: none;
+      background-color: transparent;
+      margin: auto;
+    }
+
+    .keyboard-key {
+      position: absolute;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      cursor: pointer;
+      user-select: none;
+      pointer-events: auto;
+      text-align: center;
+      opacity: 0.3;
+      /* 默认半透明，减少画面遮挡 */
+      transition: opacity 0.2s, transform 0.1s, box-shadow 0.2s;
+    }
+
+    /* 按下状态：瞬间高亮并带有紫色霓虹发光 */
+    .keyboard-key:active,
+    .keyboard-key-press {
+      opacity: 0.9 !important;
+      transform: scale(0.92);
+      box-shadow: 0 0 15px rgba(159, 242, 199, 0.8);
+      border-color: rgba(159, 242, 199, 0.5) !important;
+    }
+    /* small 键靠 translate(-50%,50%) 锚定坐标，active 必须带上否则按键向右上跳变 */
+    .keyboard-key.keyboard-key-small:active,
+    .keyboard-key.keyboard-key-small.keyboard-key-press {
+      transform: translate(-50%, 50%) scale(0.92);
+    }
+
+    .keyboard-key-text.editing {
+      text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
+      animation: pulse-glow 2s infinite ease-in-out;
+    }
+
+    @keyframes pulse-glow {
+      0% {
+        opacity: 0.6;
+      }
+
+      50% {
+        opacity: 1;
+      }
+
+      100% {
+        opacity: 0.6;
+      }
+    }
+
+    .keyboard-no-pointer {
+      pointer-events: none;
+    }
+
+    .keyboard-key {
+      position: absolute;
+      backdrop-filter: blur(2px);
+      font-size: 0.6rem;
+      color: #ffffff;
+      user-select: none;
+      touch-action: none;
+      transition: transform 0.08s, box-shadow 0.08s;
+    }
+
+    .keyboard-key-remove {
+      position: absolute;
+      height: 16px;
+      width: 16px;
+      color: #fff;
+      background: rgba(252, 74, 94, 0.9);
+      font-size: 12px;
+      line-height: 16px;
+      top: -16px;
+      right: -16px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      border-radius: 50%;
+      cursor: pointer;
+      z-index: 1;
+    }
+
+    .keyboard-key-text {
+      cursor: grab;
+      background: linear-gradient(to top, rgba(92, 109, 130, 0.7), rgba(60, 70, 81, 0.7));
+      border-radius: 50%;
+    }
+
+    .keyboard-key-text.dragging {
+      cursor: grabbing;
+      background: rgba(255, 255, 255, 0.9);
+      color: #0a211b;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+      z-index: 9999;
+    }
+
+    .keyboard-key-small {
+      transform: translate(-50%, 50%);
+      border-radius: 50%;
+      height: 1.6rem;
+      width: 1.6rem;
+      line-height: 1.6rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .keyboard-key-large {
+      border-radius: 1rem;
+      height: 2rem;
+      width: 4rem;
+      line-height: 2rem;
+    }
+
+    .keyboard-key-press {
+      background-color: rgba(255, 255, 255, 0.2) !important;
+    }
+
+    .keyboard-lock {
+      opacity: 0.6;
+      text-align: center;
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      border-radius: 1.1rem;
+      height: 2.2rem;
+      line-height: 2.2rem;
+      /*width: 14rem;*/
+      background-color: rgba(0, 0, 0, 0.4);
+      padding: 0 1.1rem;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      color: #fff;
+      border: 1px #fff solid;
+    }
+
+    .keyboard-editor {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 12px;
+      padding: 0 1.1rem;
+      display: flex;
+      gap: 2rem;
+    }
+
+    .bling {
+      animation: blink-scale 2s forwards;
+    }
+
+    @keyframes blink-scale {
+      0% {
+        background-color: #2a8a68;
+        transform: scale(1);
+      }
+
+      25% {
+        background-color: #9ff2c7;
+        transform: scale(1.5);
+      }
+
+      50% {
+        background-color: #2a8a68;
+        transform: scale(1);
+      }
+
+      75% {
+        background-color: #9ff2c7;
+        transform: scale(1.5);
+      }
+
+      100% {
+        background-color: #2a8a68;
+        transform: scale(1);
+      }
+    }
+
+    @keyframes shine {
+      0% {
+        left: -100%;
+      }
+
+      50% {
+        left: 100%;
+      }
+
+      100% {
+        left: 100%;
+      }
+    }
+
+    @keyframes blink {
+
+      0%,
+      100% {
+        background-color: #fffa65;
+      }
+
+      50% {
+        background-color: #ff6a6a;
+      }
+    }
+
+    .editor-btn {
+      height: 2.2rem;
+      line-height: 2.2rem;
+      width: 6.5rem;
+      border-radius: 1.1rem;
+      cursor: pointer;
+      color: #fff;
+      font-size: 1rem;
+      text-align: center;
+      display: inline-block;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      /* 轻微浮起感 */
+    }
+
+    .layout-btn select {
+      width: 100%;
+      height: 100%;
+      padding-left: 10px;
+      border: none;
+      outline: none;
+      font-size: 1rem;
+      background: #5a6c78;
+      color: #fff;
+    }
+
+    .layout-btn select option {
+      color: #fff;
+      background: linear-gradient(145deg, #6d8391, #5a6c78);
+    }
+
+    /* Reset 按钮 */
+    .reset-btn {
+      background: linear-gradient(145deg, #5a6c78, #3f4f5b);
+    }
+
+    .reset-btn:hover {
+      background: linear-gradient(145deg, #6b7d8b, #495864);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Add Key 按钮 */
+    .add-key-btn {
+      background: linear-gradient(145deg, #174238, #2a8a68);
+    }
+
+    .add-key-btn:hover {
+      background: linear-gradient(145deg, #5a67a4, #6a78d1);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Done 按钮 */
+    .done-btn {
+      background: linear-gradient(145deg, #2a8a68, #9ff2c7);
+    }
+
+    .done-btn:hover {
+      background: linear-gradient(145deg, #6a78d1, #9fb0ff);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .loader {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      margin-bottom: 20px;
+    }
+
+    /* 渐变圆形（logo 圆） */
+    .circle {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: linear-gradient(225deg,
+          #ffcd85 0%,
+          #ffb07c 25%,
+          #ff8fa3 40%,
+          #8e44ad 100%);
+      /*-webkit-mask: radial-gradient(farthest-side, black 90%, transparent 100%);*/
+      /*-webkit-mask-composite: destination-in;*/
+      mask-composite: intersect;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* 云朵 */
+    .cloud {
+      z-index: 2;
+      position: absolute;
+      background: #fff;
+      animation: float 3s ease-in-out infinite alternate;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 1);
+    }
+
+    .cloud::before,
+    .cloud::after {
+      content: '';
+      position: absolute;
+      background: #fff;
+      border-radius: 50%;
+    }
+
+    .cloud1 {
+      width: 70px;
+      height: 30px;
+      top: 60px;
+      left: -25px;
+
+      border-radius: 15px;
+    }
+
+    .cloud1::before {
+      width: 40px;
+      height: 40px;
+      top: -18px;
+      left: 10px;
+    }
+
+    .cloud1::after {
+      width: 25px;
+      height: 25px;
+      top: 14px;
+      left: 13px;
+    }
+
+    .cloud2 {
+      width: 40px;
+      height: 20px;
+      top: 60px;
+      left: 80px;
+      animation-duration: 2s;
+      border-radius: 10px;
+    }
+
+    .cloud2::before {
+      width: 25px;
+      height: 25px;
+      top: -10px;
+      left: 8px;
+    }
+
+    @keyframes float {
+      0% {
+        transform: translateY(0px);
+      }
+
+      50% {
+        transform: translateY(-15px);
+      }
+
+      100% {
+        transform: translateY(0px);
+      }
+    }
+
+    .l-rocker {
+      transform: translate(-50%, 50%);
+      position: absolute;
+      cursor: grab;
+      width: 150px;
+      height: 150px;
+      background-color: rgba(0, 0, 0, 0.1);
+      border-radius: 50%;
+    }
+
+    .l-rocker.dragging {
+      cursor: grabbing;
+      background: rgba(255, 255, 255, 0.1);
+      color: #0a211b;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+      z-index: 9999;
+    }
+
+    .l-rocker-key {
+      position: absolute;
+    }
+
+    .l-rocker-key div {}
+
+    .l-rocker-key-small {
+      border-radius: 50%;
+      height: 1.6rem;
+      width: 1.6rem;
+      line-height: 1.6rem;
+      transform: translate(-50%, 50%);
+      background-color: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(2px);
+      color: #ffffff;
+      font-size: 0.6rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .ping {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 16px;
+      pointer-events: none;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 0 2px 2px 0;
+      display: flex;
+      font-size: 8px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #floating-ball {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      position: fixed;
+      cursor: grab;
+      z-index: 9998;
+      transition: transform 0.3s ease;
+      /*background-color: rgba(99, 99, 99, 0.6);*/
+      overflow: hidden;
+    }
+
+    /* 自动贴边逻辑 */
+    /*@media (hover: none) {*/
+    /*    #floating-ball {*/
+    /*        filter: invert(1);*/
+    /*    }*/
+    /*}*/
+
+    .menu {
+      width: 100%;
+      height: 100%;
+      position: fixed;
+      left: 0;
+      top: 0;
+      z-index: 9998;
+    }
+
+    .sidebar-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      /* 半透明背景 */
+      z-index: 3;
+      /* 确保它覆盖其他内容 */
+      display: flex;
+      justify-content: flex-end;
+      /* 右侧显示侧边栏 */
+      align-items: center;
+      /* 垂直居中 */
+    }
+
+    .sidebar {
+      overflow: hidden;
+      height: 100%;
+      width: 300px;
+      background-color: #0a211b;
+      position: absolute;
+      left: -300px;
+      top: 0;
+      z-index: 4;
+      transition: transform 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      justify-content: center;
+    }
+
+    .sidebar-open {
+      transform: translateX(100%);
+      transition: all 0.2s ease;
+    }
+
+    .sidebar-button {
+      display: flex;
+      justify-content: space-between;
+      align-content: center;
+      height: 3.5rem;
+      box-sizing: border-box;
+      text-align: left;
+      width: 100%;
+      padding: 0 1rem;
+      border: none;
+      background: none;
+      color: #a1a1aa;
+      font-size: 1rem;
+    }
+
+    .sidebar-div {
+      display: flex;
+      justify-content: space-between;
+      align-content: center;
+      box-sizing: border-box;
+      text-align: left;
+      width: 100%;
+      padding: 0 1rem;
+      border: none;
+      background: none;
+      color: #a1a1aa;
+      font-size: 1rem;
+      height: 25px;
+      line-height: 25px;
+    }
+
+    .sidebar-div input {
+      width: 50px;
+      background-color: #3f4c57;
+      color: white;
+      border: none;
+      box-shadow: none;
+      outline: none;
+      padding: 4px 6px;
+      border-radius: 4px;
+      margin-right: 10px;
+    }
+
+    .sidebar-button-btn {
+      margin: auto 0;
+      background-color: #174238;
+      border: 1px #9ff2c7 solid;
+      width: 4rem;
+      text-align: center;
+      height: 2rem;
+      line-height: 2rem;
+      border-radius: 1rem;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    .switch {
+      margin: auto 0;
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 24px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #42505b;
+      transition: 0.3s;
+      border-radius: 24px;
+    }
+
+    .slider::before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: #717274;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+
+    input:checked+.slider {
+      background-color: #9ff2c7;
+    }
+
+    input:checked+.slider::before {
+      background-color: white;
+      transform: translateX(26px);
+    }
+
+    .reward-btn {
+      z-index: 9999;
+      font-size: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+      opacity: 1;
+      border-radius: 17px;
+      background: #174238;
+      padding: 9px 15px;
+      border: none;
+      cursor: pointer;
+    }
+
+    .loading-video-div {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    .loading-video-body {
+      width: 100%;
+      height: auto;
+
+      aspect-ratio: 16 / 9;
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    .loading-progress {
+      position: absolute;
+      left: 50%;
+      bottom: 2rem;
+      transform: translateX(-50%);
+      width: 80%;
+      height: 3rem;
+      overflow: hidden;
+      border-radius: 1.5rem;
+      background-color: rgba(57, 74, 89, 1);
+      box-sizing: border-box;
+    }
+
+    .progress-mask {
+      position: absolute;
+      inset: 3px;
+      border-radius: 1.5rem;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      border-radius: 1.5rem;
+      background: #9ff2c7;
+      transform-origin: left center;
+      transition: transform 0.25s linear;
+    }
+
+    .progress-text {
+      color: #fff;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .loading-tips {
+      padding-top: 20px;
+      border-top: rgba(79, 92, 106, 1) 1px solid;
+      text-align: center;
+      width: 80%;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 400;
+      position: absolute;
+      left: 50%;
+      bottom: min(100px, 8vh);
+      transform: translateX(-50%);
+    }
+      .loader { width: 110px; height: 110px; }
+    .minty-loader { width: 100%; height: 100%; animation: mintyPulse 1.6s ease-in-out infinite alternate; }
+    @keyframes mintyPulse { from { transform: scale(0.92); opacity: .8; } to { transform: scale(1.05); opacity: 1; } }
+    #loading p { font-family: 'DM Sans', sans-serif; }
+    .btn-info { background: #9ff2c7 !important; color: #0a211b; width: 220px; height: 56px; line-height: 56px; border-radius: 50px; font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 1.3rem; cursor: pointer; box-shadow: 0 8px 24px rgba(159,242,199,.25); }
+    .btn-info:active { background: #7fe0ac !important; }
+    .sidebar-button-btn { border-color: #9ff2c7; }
+  </style>
+</head>
+
+<body style="background:#000;margin:0;overflow:hidden" oncontextmenu="return false;">
+  <div id="app" ref="containerDiv" class="container" v-cloak>
+    
+    <div id="floating-ball" ref="floating-ball" class="floating-ball" v-show="!openMenu" :style="{ left: ballPosition.x + 'px', top: ballPosition.y + 'px' }" @mousedown.prevent="ballStart" @touchstart.prevent="ballStart">
+      <img src="https://cdn.jsdelivr.net/gh/Bubba7004/minty-proxy-assets@main/assets/minty.svg" style="width: 40px;height: 40px;opacity: 0.75" :style="{ transform: iconRotate ? 'rotate(90deg)' : 'none' }" />
+    </div>
+    
+    <div id="menu" class="menu" :style="{'pointer-events': openMenu? 'auto' : 'none'}">
+      <div v-if="openMenu" class="sidebar-overlay" @click="openMenu = false"></div>
+      <div class="sidebar" :class="{'sidebar-open':openMenu}">
+        <div class="sidebar-button">
+          <div style="margin:auto 0;">Streaming Quality</div>
+          <div style="display: flex;align-items: center;">
+            <select style="background:#42505b;color: #fff;height: 2rem;width: 4rem;border-radius: 4px;border: none;" v-model="quality" @change="changeQuality(quality)">
+              <option value="HD">HD</option>
+              <option value="SD">SD</option>
+              <option value="LD">LD</option>
+              <option value="ULD">ULD</option>
+            </select>
+          </div>
+        </div>
+        <div style="width: 100%;border: 1px #3f4c57 solid;margin-left: 1rem"></div>
+        <div class="sidebar-button">
+          <div style="margin:auto 0;">Page Orientation</div>
+          <div class="sidebar-button-btn" @click="isRotateScreen=!isRotateScreen">↻</div>
+        </div>
+        <div style="width: 100%;border: 1px #3f4c57 solid;margin-left: 1rem"></div>
+        <div class="sidebar-button">
+          <div style="margin:auto 0;">Rotate Game</div>
+          <div class="sidebar-button-btn" @click="rotateScreenDC()">↻</div>
+        </div>
+        <div style="width: 100%;border: 1px #3f4c57 solid;margin-left: 1rem"></div>
+        <div class="sidebar-button">
+          <div style="margin:auto 0;">Back Key</div>
+          <div class="sidebar-button-btn" @click="sendDataChannelMessage('keycode>4')">Back</div>
+        </div>
+        <div style="width: 100%;border: 1px #3f4c57 solid;margin-left: 1rem"></div>
+        <div class="sidebar-button">
+          <div style="margin:auto 0;">Restart App</div>
+          <div class="sidebar-button-btn" @click="sendDataChannelMessage('game>restart')">Restart</div>
+        </div>
+        <div style="width: 100%;border: 1px #3f4c57 solid;margin-left: 1rem"></div>
+        <div class="sidebar-button">
+          <div style="margin:auto 0;">Keyboard</div>
+          <label class="switch">
+            <input type="checkbox" v-model="showKeyboard">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div style="width: 100%;border: 1px #3f4c57 solid;margin-left: 1rem"></div>
+        <div class="sidebar-button">
+          <div style="margin:auto 0;">Keyboard Edit</div>
+          <div v-if="!isEditKeyboard" class="sidebar-button-btn" @click="enterEditMode">Edit</div>
+          <div v-else style="display: flex; gap: 5px;">
+            <div class="sidebar-button-btn" style="background: #4b5563; width: auto; padding: 0 8px;" @click="resetKeyboardLayout">Reset</div>
+            <div class="sidebar-button-btn" style="width: auto; padding: 0 8px;" @click="saveAndExitEdit">Save</div>
+          </div>
+        </div>
+        <div style="width: 100%;border: 1px #3f4c57 solid;margin-left: 1rem"></div>
+        <div class="sidebar-button">
+          <div style="margin:auto 0;display: flex;align-items: start;">Local Keyboard</div>
+          <label class="switch">
+            <input type="checkbox" v-model="remoteIME" @change="{changeIME()}">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+    
+    <div class="game" ref="gameDiv" id="gameWrapper">
+      <div class="video-wrapper" ref="remoteWrapper" id="video-wrapper" :style="{ width: videoWidth + 'px', height: videoHeight + 'px' }">
+        <audio class="audio" id="remote-audio" ref="remoteAudio" style="display: none" muted autoplay playsinline></audio>
+        <video class="video" id="remote-video" ref="remoteVideo" :class="{rotate:isRotate}" autoplay muted playsinline disablePictureInPicture="true" controlslist='nodownload'></video>
+        <canvas id="canvasCoc" :class="{rotate:isRotate}" ref="remoteCanvas" @mousemove.prevent="mousemove" @mousedown.prevent="mousedown" @mousewheel.prevent="mousewheel" @mouseup.prevent="mouseup" @touchstart.prevent="touchstart" @touchmove.prevent="touchmove" @touchend.prevent="touchend" @touchcancel.prevent="touchcancel"></canvas>
+      </div>
+    </div>
+    
+    <div id="keyboard" class="keyboard" :class="[{'keyboard-no-pointer':!isEditKeyboard && !showKeyboard}]" :style="[{'pointer-events': isEditKeyboard ? 'auto' : (showKeyboard ? 'none' : 'none')}, { width: videoHeight + 'px', height: videoWidth + 'px' }]" v-show="currentGameConfig && currentGameConfig.keyBoardDirection === rotation && (showKeyboard || isEditKeyboard) && !isMobile()">
+      <template v-if="currentGameConfig">
+        <template v-for="(item, key) in currentGameConfig.keyBoard">
+          <div v-show="(!cursorLock && !item.pointerLockShow) || (cursorLock && item.pointerLockShow) || (!item.pointerLockShow && !item.pointerLockHidden)" :key="key" :class="['keyboard-key',`keyboard-key-${item.size}`,`keyboard-key-${keyToKeyCode(item.key)}`]" :style="keyStyle(item, currentGameConfig.keyBoardDirection)">
+            <div v-if="isEditKeyboard" class="keyboard-key-remove" @pointerdown.stop @click.stop="removeKeyboardKey(key)">×</div>
+            <div class="keyboard-key-text" :style="{ transform: keyRotate ? 'rotate(270deg)' : 'none' }" style="width: 100%;height: 100%;" @pointerdown="startDragKey($event, key)" :class="[{ bling: item.bling, editing: isEditKeyboard }]" @animationend="disableKeyBling(key)">
+              {{ item.str }}
+            </div>
+          </div>
+        </template>
+
+        <template v-if="currentGameConfig.supportLeftRocker && currentGameConfig.center">
+          <div class="l-rocker" @pointerdown="startDragLeftRocker($event)" :style="translationCenterLocation(currentGameConfig.center, currentGameConfig.keyBoardDirection)">
+            <div class="l-rocker-key l-rocker-key-small" :class="[`keyboard-key-${keyToKeyCode('w')}`]" style="bottom:85%;left: 50%">
+              <div :style="{ transform: keyRotate ? 'rotate(270deg)' : 'none' }" :class="{editing: isEditKeyboard}">W</div>
+            </div>
+            <div class="l-rocker-key l-rocker-key-small" :class="[`keyboard-key-${keyToKeyCode('a')}`]" style="bottom:50%;left: 15%">
+              <div :style="{ transform: keyRotate ? 'rotate(270deg)' : 'none' }" :class="{editing: isEditKeyboard}">A</div>
+            </div>
+            <div class="l-rocker-key l-rocker-key-small" :class="[`keyboard-key-${keyToKeyCode('s')}`]" style="bottom:15%;left: 50%">
+              <div :style="{ transform: keyRotate ? 'rotate(270deg)' : 'none' }" :class="{editing: isEditKeyboard}">S</div>
+            </div>
+            <div class="l-rocker-key l-rocker-key-small" :class="[`keyboard-key-${keyToKeyCode('d')}`]" style="bottom:50%;left: 85%">
+              <div :style="{ transform: keyRotate ? 'rotate(270deg)' : 'none' }" :class="{editing: isEditKeyboard}">D</div>
+            </div>
+          </div>
+        </template>
+      </template>
+      <div v-if="isEditKeyboard" class="keyboard-editor">
+        <div class="editor-btn add-key-btn" @click="addKeyboardKey">+ Add Key</div>
+        <div class="editor-btn reset-btn" @click="resetKeyboardLayout">Reset</div>
+        <div class="editor-btn done-btn" @click="saveAndExitEdit">Save</div>
+      </div>
+      <div v-if="!isEditKeyboard && currentGameConfig && currentGameConfig.pointerLock" class="keyboard-lock" :style="{ opacity: cursorLock ? 0.2 : 0.7 }">
+        <span v-if="!cursorLock">Press "ctrl + m" to lock the mouse.</span>
+        <span v-if="cursorLock">Press "ctrl + m" to unlock the mouse.</span>
+      </div>
+    </div>
+    <div id="loading" class="loading" v-if="showLoadingProgress < 100">
+      <div class="loader"><img src="https://cdn.jsdelivr.net/gh/Bubba7004/minty-proxy-assets@main/assets/minty.svg" alt="minty" class="minty-loader"></div>
+      <div class="loading-progress" style="width:70%;max-width:500px;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden;margin-top:30px;z-index:3">
+        <div class="progress-bar" :style="{width : showLoadingProgress + '%', height: '100%', background: '#fff', transition: 'width 0.3s ease'}"></div>
+      </div>
+      <p style="color:#fff;margin-top:10px;z-index:3">Initializing session... {{Math.ceil(showLoadingProgress)}}%</p>
+      <p id="step-msg" style="color:#94a3b8;font-size:12px;margin-top:5px;z-index:3;height:16px"></p>
+    </div>
+    <div class="startGame" v-if="showPlayBtn" style="position:fixed;inset:0;background:rgba(0,0,0,0.9);display:flex;justify-content:center;align-items:center;z-index:999999">
+      <button @click="startGame" class="btn-info">Enter Game</button>
+    </div>
+    <div id="input-div" class="input-div" v-show="inputTextShow">
+        <input id="input-div_input" type="text" ref="input" v-model="inputTextStr" @keyup.enter.exact="sendText" @keyup.esc.exact="closeInput" class="input-div_input"/>
+        <div class="input-div_div">
+            <button @click="sendText" class="input-div_div_button">
+                <img v-show="prevInputTextStr !== '' && prevInputTextStr === inputTextStr" style="height: 1.2rem;margin-top: 0.2rem;" src="./run-site/images/send.png">
+                <svg v-show="prevInputTextStr === '' || prevInputTextStr !== inputTextStr " style="color: #fff;" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-send-icon lucide-send">
+                    <path d="M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z"/>
+                    <path d="m21.854 2.147-10.94 10.939"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+  </div>
+  <script>
+ window.gtag = window.gtag || function () {};
+const params = new URLSearchParams(window.location.search);
+const getLaunchData = () => {
+  try {
+    const _0x485b28 = localStorage.getItem("cm_launch_data");
+    if (!_0x485b28) {
+      return {};
+    }
+    const _0x459538 = JSON.parse(_0x485b28);
+    const _0x35aaa3 = Date.now();
+    if (_0x35aaa3 - _0x459538.timestamp > 0x4e20) {
+      localStorage.removeItem("cm_launch_data");
+      return {};
+    }
+    return _0x459538;
+  } catch (_0x550f87) {
+    return {};
+  }
+};
+const launchData = getLaunchData();
+const keyToKeyCodeMap = {
+  'a': 0x41,
+  'b': 0x42,
+  'c': 0x43,
+  'd': 0x44,
+  'e': 0x45,
+  'f': 0x46,
+  'g': 0x47,
+  'h': 0x48,
+  'i': 0x49,
+  'j': 0x4a,
+  'k': 0x4b,
+  'l': 0x4c,
+  'm': 0x4d,
+  'n': 0x4e,
+  'o': 0x4f,
+  'p': 0x50,
+  'q': 0x51,
+  'r': 0x52,
+  's': 0x53,
+  't': 0x54,
+  'u': 0x55,
+  'v': 0x56,
+  'w': 0x57,
+  'x': 0x58,
+  'y': 0x59,
+  'z': 0x5a,
+  '0': 0x30,
+  '1': 0x31,
+  '2': 0x32,
+  '3': 0x33,
+  '4': 0x34,
+  '5': 0x35,
+  '6': 0x36,
+  '7': 0x37,
+  '8': 0x38,
+  '9': 0x39,
+  'enter': 0xd,
+  'escape': 0x1b,
+  'backspace': 0x8,
+  'tab': 0x9,
+  'space': 0x20,
+  " ": 0x20,
+  'shift': 0x10,
+  'control': 0x11,
+  'alt': 0x12,
+  'meta': 0x5b,
+  'capslock': 0x14,
+  'numlock': 0x90,
+  'scrolllock': 0x91,
+  'pause': 0x13,
+  'arrowleft': 0x25,
+  'arrowup': 0x26,
+  'arrowright': 0x27,
+  'arrowdown': 0x28,
+  'insert': 0x2d,
+  'delete': 0x2e,
+  'home': 0x24,
+  'end': 0x23,
+  'pageup': 0x21,
+  'pagedown': 0x22,
+  'f1': 0x70,
+  'f2': 0x71,
+  'f3': 0x72,
+  'f4': 0x73,
+  'f5': 0x74,
+  'f6': 0x75,
+  'f7': 0x76,
+  'f8': 0x77,
+  'f9': 0x78,
+  'f10': 0x79,
+  'f11': 0x7a,
+  'f12': 0x7b,
+  '`': 0xc0,
+  '-': 0xbd,
+  '=': 0xbb,
+  '[': 0xdb,
+  ']': 0xdd,
+  "\\": 0xdc,
+  ';': 0xba,
+  "'": 0xde,
+  ',': 0xbc,
+  '.': 0xbe,
+  '/': 0xbf,
+  'num0': 0x60,
+  'num1': 0x61,
+  'num2': 0x62,
+  'num3': 0x63,
+  'num4': 0x64,
+  'num5': 0x65,
+  'num6': 0x66,
+  'num7': 0x67,
+  'num8': 0x68,
+  'num9': 0x69,
+  'nummultiply': 0x6a,
+  'numadd': 0x6b,
+  'numsubtract': 0x6d,
+  'numdecimal': 0x6e,
+  'numdivide': 0x6f,
+  'lclick': 0x3df,
+  'rclick': 0x3e0
+};
+const AppData = {
+  'initParams': {
+    'screenWidth': "1280",
+    'screenHeight': "720",
+    'language': params.get("language") || 'en',
+    'nenlyGenerateUserId': true,
+    'nenlyEsUrl': '',
+    'nenlyRotateScreen': true,
+    'enableFullScreen': false,
+    'nenlyRealIp': '',
+    'gameName': "false",
+    'showVconsole': false,
+    'env': "test",
+    'sendMetric': false,
+    'maxResolution': false,
+    'showLoading': false,
+    'lockMouse': params.get("lock_mouse") || false,
+    'metricUrl': '',
+    'logLevel': '1',
+    'statInterval': params.get("stat_interval") || 0xbb8
+  },
+  'remoteIME': true,
+  'inputTextShow': false,
+  'inputTextStr': '',
+  'inputEnterType': '4',
+  'prevInputTextStr': '',
+  'inputTextCnt': 0x0,
+  'zoom': true,
+  'socket': null,
+  'quality': params.get("quality"),
+  'prevQuality': 'SD',
+  'sid': params.get("sid"),
+  'game': params.get("game"),
+  'token': params.get("token"),
+  'email': params.get("email"),
+  'userId': params.get("userid"),
+  'codec': params.get("codec"),
+  'coordinatorUrl': params.get("coor_url"),
+  'coordinatorCloudfront': params.get("coor_cloudfront") || '',
+  'coordinatorTunnel': params.get("coor_tunnel") || '',
+  'androidInstanceId': params.get("android_instance_id") || '',
+  'bitRate': params.get("bit_rate") || 0x0,
+  'showDataChannelMsg': params.get("show_datachannel_msg") === "true",
+  'noTime': false,
+  'videoHeight': "1280",
+  'videoWidth': "720",
+  'screenHeight': "1280",
+  'screenWidth': "720",
+  'maxScreenWidth': 0x500,
+  'dataChannel': null,
+  'remoteStream': null,
+  'pc': null,
+  'pcConfiguration': {
+    'iceServers': [{
+      'urls': "stun:stun.nenly.cn:53006"
+    }, {
+      'urls': "stun:stun.l.google.com:19302"
+    }, {
+      'urls': "stun:stun1.l.google.com:19302"
+    }, {
+      'urls': "stun:stun2.l.google.com:19302"
+    }, {
+      'urls': "stun:stun3.l.google.com:19302"
+    }],
+    'bundlePolicy': "max-bundle",
+    'rtcpMuxPolicy': "require",
+    'iceCandidatePoolSize': 0xa
+  },
+  'rotation': 0x0,
+  'rotate': false,
+  'isHorizontal': false,
+  'direction': 0x2,
+  'enableTouch': true,
+  'showPlayBtn': false,
+  'isRotate': false,
+  'dataChannelStartTimestamp': 0x0,
+  'dataChannelDelay': 0x0,
+  'showPing': true,
+  'getout': false,
+  'openPageTime': 0x0,
+  'loadingDoneTime': 0x0,
+  'streamingConnectedTime': 0x0,
+  'sessionFirstScreenWidth': 0x0,
+  'sessionFirstScreenHeight': 0x0,
+  'steps': [],
+  'sendResizeJob': null,
+  'resizeCount': 0x0,
+  'videoStats': null,
+  'sendCount': 0x0,
+  'podName': '',
+  'sendStartGame': false,
+  'clientRegisterTimer': null,
+  'muteBtn': "toggleVideo>on",
+  'lockMouseTimer': null,
+  'cursorHide': false,
+  'cursorLock': false,
+  'lastKeyDownCode': 0x0,
+  'lastKeyDownTime': 0x0,
+  'exitingPointerLock': false,
+  'keyDownMap': {},
+  'timeDiff': 0x0,
+  'resizeGamePad': false,
+  'alwaysSendMove': params.get("always_send_move") === "true",
+  'codec_type': params.get("codec_type") || 0x0,
+  'currentGameConfig': {},
+  'touchIdMap': new Map(),
+  'touchCounter': 0xb,
+  'showKeyboard': true,
+  'isEditKeyboard': false,
+  'dRadius': 0x78,
+  'dStep': 0x4,
+  'supportLeftRocker': false,
+  'center': {
+    'x': 0x0,
+    'y': 0x0
+  },
+  'leftRockerStart': false,
+  'leftRockerEnd': true,
+  'leftRockerPosition': {
+    'x': 0x0,
+    'y': 0x0
+  },
+  'leftRockerPressedKeys': {},
+  'leftRockerRandom': {
+    'x': 0x0,
+    'y': 0x0
+  },
+  'supportRightRocker': false,
+  'rightRockerStart': false,
+  'rightRockerEnd': true,
+  'rightRockerPosition': {
+    'x': 0x0,
+    'y': 0x0
+  },
+  'rightRockerPressedKeys': {},
+  'supportRightClick': false,
+  'dEyeCenter': {
+    'x': 0x0,
+    'y': 0x0
+  },
+  'dEyePosition': {
+    'x': 0x0,
+    'y': 0x0
+  },
+  'dEyeRadius': 0x15e,
+  'startTime': null,
+  'liveTimeSet': [],
+  'gameConfig': {},
+  'moveX': 0x0,
+  'moveY': 0x0,
+  'pointerLockStart': false,
+  'resetMoveTimer': null,
+  'scaleValue': 0x1,
+  'ballDragging': false,
+  'ballPosition': {
+    'x': 0x0,
+    'y': document.documentElement.clientHeight / 0x2
+  },
+  'openMenu': false,
+  'isFullScreen': false,
+  'isRotateScreen': false,
+  'podLocale': 0x0,
+  'androidInstance': {},
+  'checkGame': null,
+  'supportPointerLock': false,
+  'lastMoveEvent': null,
+  'sendMove': false,
+  'mouseSensitivity': 0x1,
+  'iconRotate': false,
+  'keyRotate': false,
+  'oldOffer': null,
+  'oldAnswer': null,
+  'editLeftPosition': false,
+  'utcDate': '',
+  'joinRoomTimer': null,
+  'joinRoomCount': 0x0,
+  'selectLayout': '',
+  'defaultKeyboard': null,
+  'defaultCenter': null,
+  'loadingProgress': 0x0,
+  'showLoadingProgress': 0x0,
+  'apiHostUrl': '',
+  'selectWsUrl': '',
+  'preContentComplete': false,
+  'showTrace': false
+};
+const AppMethods = {
+  async 'initApp'() {
+    console.log("Initialization sequence started.");
+    await this.getApiHost();
+    if (!this.sid && launchData) {
+      this.sid = launchData.sid || params.get("sid");
+      this.quality = launchData.quality || params.get("quality") || 'SD';
+    }
+    if (this.sid) {
+      try {
+        const _0x51a822 = await fetch(this.apiHostUrl + "/web/sid?sid=" + this.sid).then(_0x54852b => {
+          if (!_0x54852b.ok) {
+            throw new Error("HTTP error! status: " + _0x54852b.status);
+          }
+          return _0x54852b.json();
+        })["catch"](_0x3a1273 => {
+          console.error("request error:", _0x3a1273);
+          return null;
+        });
+        localStorage.removeItem("cm_launch_data");
+        if (!_0x51a822 || _0x51a822.code !== 0x0) {
+          if (!window.isAllInOne) {
+            window.location.href = "./main.svg";
+          }
+          return;
+        }
+        this.game = _0x51a822.data.game;
+        this.token = _0x51a822.data.token;
+        this.email = _0x51a822.data.email;
+        this.userId = _0x51a822.data.android_id;
+        this.coordinatorUrl = _0x51a822.data.coor_url;
+        this.coordinatorTunnel = _0x51a822.data.coor_tunnel;
+        this.androidInstanceId = _0x51a822.data.android_instance_id;
+        this.coordinatorCloudfront = _0x51a822.data.coor_cloudfront;
+        console.log("Session acquired for user:", this.userId);
+        this.getUTCDate();
+        setInterval(() => this.getUTCDate(), 0x3e8);
+        this.pushSteps("Welcome, " + this.userId);
+        this.loadingProgress = 0xf;
+        this.gameLoop();
+        const _0x2b1896 = setInterval(() => {
+          if (this.showLoadingProgress < this.loadingProgress) {
+            const _0x5cfb93 = this.loadingProgress - this.showLoadingProgress;
+            this.showLoadingProgress += Math.max(0.5, _0x5cfb93 * 0.15);
+          } else {
+            if (this.showLoadingProgress < 0x63) {
+              if (Math.random() > 0.95) {
+                this.showLoadingProgress += 0.2;
+              }
+            }
+          }
+          if (this.showLoadingProgress >= 0x64) {
+            this.showLoadingProgress = 0x64;
+            clearInterval(_0x2b1896);
+          }
+        }, 0x1e);
+        const _0xc5e2af = await fetch(this.apiHostUrl + "/web/game_config?pkg=" + (this.game || "default")).then(_0x49bd55 => _0x49bd55.json())["catch"](() => null);
+        if (_0xc5e2af && _0xc5e2af.code === 0x0) {
+          this.currentGameConfig = _0xc5e2af.data.config;
+          this.defaultKeyboard = JSON.parse(JSON.stringify(this.currentGameConfig.keyBoard));
+          this.defaultCenter = JSON.parse(JSON.stringify(this.currentGameConfig.center));
+          this.supportPointerLock = this.currentGameConfig?.["pointerLock"] ?? false;
+          this.supportRightClick = this.currentGameConfig?.["supportRightClick"] ?? false;
+          this.supportLeftRocker = this.currentGameConfig?.["supportLeftRocker"] ?? false;
+          this.center = this.currentGameConfig?.["center"] ?? {
+            'x': 0x0,
+            'y': 0x0
+          };
+        }
+        let _0x4cf83c = this.$refs.gameDiv.clientWidth;
+        let _0x3df37e = this.$refs.gameDiv.clientHeight;
+        if (this.initParams.nenlyRotateScreen) {
+          this.direction = _0x4cf83c > _0x3df37e ? 0x1 : 0x0;
+        } else {
+          this.direction = 0x1;
+        }
+        this.changeOrientation(this.direction);
+        this.loadKeyboardLayout();
+        this.connectStreaming();
+        window.addEventListener("blur", () => {
+          if (this.currentGameConfig?.["keyBoard"]) {
+            for (const _0x19f6b7 in this.keyDownMap) {
+              if (this.keyDownMap[_0x19f6b7]) {
+                const _0x2b36e8 = this.currentGameConfig.keyBoard[_0x19f6b7.toLowerCase()];
+                const _0xb25078 = _0x2b36e8?.["coordinate"];
+                if (_0xb25078 && _0xb25078 !== "0,0") {
+                  const _0x45b8fb = this.getTouchCounter(_0x19f6b7.toLowerCase());
+                  this.sendDataChannelMessage("touch>Touch end:" + _0x45b8fb + ',' + _0xb25078);
+                }
+                if (["Alt", "Control", "Shift", "Meta"].includes(_0x19f6b7)) {
+                  this.sendDataChannelMessage("touch>KeyUpCmd:" + _0x19f6b7);
+                }
+              }
+            }
+          }
+          this.keyDownMap = {};
+          this.leftRockerPressedKeys = {};
+        });
+        window.addEventListener("resize", () => {
+          this.changeOrientation(this.direction);
+        });
+        const _0x3688d1 = () => {
+          const _0x48db0d = document.getElementById("canvasCoc");
+          this.cursorLock = document.pointerLockElement === _0x48db0d;
+        };
+        document.addEventListener("pointerlockchange", _0x3688d1);
+        document.addEventListener("mozpointerlockchange", _0x3688d1);
+        document.addEventListener("webkitpointerlockchange", _0x3688d1);
+      } catch (_0x5355d6) {
+        console.error("Mount Error:", _0x5355d6);
+      }
+    } else {
+      this.pushSteps("invalid session");
+    }
+  },
+  'sendText'() {
+    if (this.prevInputTextStr !== '' && this.prevInputTextStr === this.inputTextStr) {
+      this.sendDataChannelMessage("softinput>action:" + this.inputEnterType);
+      this.prevInputTextStr = '';
+      this.inputTextStr = '';
+      return;
+    }
+    this.sendDataChannelMessage("softinput>text_change:" + this.inputTextCnt++ + ":0,99999," + this.inputTextStr);
+    this.prevInputTextStr = this.inputTextStr;
+    this.$refs.input.focus();
+  },
+  'ballClick'() {
+    this.openMenu = !this.openMenu;
+  },
+  'ballStart'(_0x115902) {
+    this.ballDragging = true;
+    const _0x1d57af = _0x115902.touches ? _0x115902.touches[0x0].clientX : _0x115902.clientX;
+    const _0x409fc9 = _0x115902.touches ? _0x115902.touches[0x0].clientY : _0x115902.clientY;
+    const _0x13da16 = _0x1d57af - this.ballPosition.x;
+    const _0x3a7224 = _0x409fc9 - this.ballPosition.y;
+    const _0x2d5dd8 = _0xad04c8 => {
+      if (!this.ballDragging) {
+        return;
+      }
+      const _0x3f5b5a = _0xad04c8.touches ? _0xad04c8.touches[0x0].clientX : _0xad04c8.clientX;
+      const _0x79eac1 = _0xad04c8.touches ? _0xad04c8.touches[0x0].clientY : _0xad04c8.clientY;
+      const _0x3bf054 = window.innerWidth - 0x28;
+      const _0x4857a8 = window.innerHeight - 0x28;
+      this.ballPosition.x = Math.max(0x0, Math.min(_0x3f5b5a - _0x13da16, _0x3bf054));
+      this.ballPosition.y = Math.max(0x0, Math.min(_0x79eac1 - _0x3a7224, _0x4857a8));
+    };
+    const _0x1e508f = _0x385aa8 => {
+      this.ballDragging = false;
+      const _0x46ec13 = _0x385aa8.changedTouches ? _0x385aa8.changedTouches[0x0].clientX : _0x385aa8.clientX;
+      const _0x2e18dc = _0x385aa8.changedTouches ? _0x385aa8.changedTouches[0x0].clientY : _0x385aa8.clientY;
+      const _0x5c0736 = Math.abs(_0x46ec13 - _0x1d57af);
+      const _0x4ac66b = Math.abs(_0x2e18dc - _0x409fc9);
+      if (_0x5c0736 < 0x5 && _0x4ac66b < 0x5) {
+        this.ballClick();
+      }
+      window.removeEventListener("mousemove", _0x2d5dd8);
+      window.removeEventListener("mouseup", _0x1e508f);
+      window.removeEventListener("touchmove", _0x2d5dd8);
+      window.removeEventListener("touchend", _0x1e508f);
+    };
+    window.addEventListener("mousemove", _0x2d5dd8);
+    window.addEventListener("mouseup", _0x1e508f);
+    window.addEventListener("touchmove", _0x2d5dd8, {
+      'passive': false
+    });
+    window.addEventListener("touchend", _0x1e508f);
+  },
+  'keyStyle'(_0x816f11, _0x1337fc) {
+    if (_0x816f11.location && _0x816f11.location !== '') {
+      return _0x816f11.location;
+    }
+    if (_0x816f11.coordinate && _0x816f11.coordinate !== '' && _0x816f11.coordinate !== "0,0") {
+      const [_0x1b8f67, _0x26bd21] = _0x816f11.coordinate.split(',').map(Number);
+      return "left: " + _0x1b8f67 / 0x500 * 0x64 + "%; bottom: " + (0x2d0 - _0x26bd21) / 0x2d0 * 0x64 + '%;';
+    }
+    return _0x816f11.location;
+  },
+  'isMobile'() {
+    if (navigator.userAgentData) {
+      return navigator.userAgentData.mobile;
+    }
+    return /Mobi|Android|iPhone|iPad|iPod|Windows Phone/i.test(navigator.userAgent);
+  },
+  'onPreContentComplete'() {
+    log.info("onPreContentComplete");
+    this.preContentComplete = true;
+  },
+  'changeLayout'(_0x3de9e0) {
+    this.selectLayout = _0x3de9e0.target.value;
+    localStorage.setItem("selectLayout:" + this.game, this.selectLayout);
+    this.loadKeyboardLayout();
+  },
+  'keyToKeyCode'(_0x18c41c) {
+    if (!_0x18c41c) {
+      return 0x0;
+    }
+    return keyToKeyCodeMap[_0x18c41c.toLowerCase()] ?? 0x0;
+  },
+  'changeQuality'(_0xc904a9) {
+    axios.post(this.apiHostUrl + "/phone/action", {
+      'android_id': this.userId,
+      'game_name': this.game,
+      'instance_id': this.androidInstanceId || "local",
+      'key': "quality",
+      'value': _0xc904a9
+    }, {
+      'headers': {
+        'X-User-Token': this.token
+      }
+    }).then(_0xa5e5e6 => {
+      console.log("res：", _0xa5e5e6.data);
+      if (_0xa5e5e6.data.code === 0x0) {
+        Swal.fire({
+          'theme': "material-ui-dark",
+          'toast': true,
+          'position': "bottom",
+          'icon': "success",
+          'title': "Streaming quality set to " + this.quality,
+          'showConfirmButton': false,
+          'timer': 0x7d0,
+          'timerProgressBar': true
+        });
+        this.prevQuality = this.quality;
+        return;
+      }
+      this.quality = this.prevQuality;
+      if (_0xa5e5e6.data.message === "VIP level too low") {
+        Swal.fire({
+          'theme': "material-ui-dark",
+          'text': "Upgrade to Premium Plan for HD.",
+          'icon': "info",
+          'showCancelButton': true,
+          'confirmButtonText': "Upgrade",
+          'target': document.body
+        }).then(_0x48b423 => {
+          if (_0x48b423.isConfirmed) {
+            const _0xc2ae8a = new URL("https://shop.cloudmoonapp.com/shop");
+            if (this.token) {
+              _0xc2ae8a.searchParams.set("token", this.token);
+            }
+            if (this.email) {
+              _0xc2ae8a.searchParams.set("email", this.email);
+            }
+            window.open(_0xc2ae8a.toString(), "_blank");
+          }
+        });
+      } else {
+        Swal.fire({
+          'theme': "material-ui-dark",
+          'toast': true,
+          'position': "bottom",
+          'icon': "warning",
+          'title': _0xa5e5e6.data.message,
+          'showConfirmButton': false,
+          'timer': 0x7d0,
+          'timerProgressBar': true
+        });
+      }
+    })["catch"](_0x10bd6e => {
+      this.quality = this.prevQuality;
+      console.error("err：", _0x10bd6e);
+    });
+  },
+  'checkWsAvailable'(_0x18b016, _0x1eca45 = 0x1388, _0x543f93) {
+    return new Promise((_0x534d45, _0x4618d4) => {
+      let _0xb4aae4;
+      let _0x527cc3 = false;
+      const _0x1f9fb6 = () => {
+        _0x527cc3 = true;
+        clearTimeout(_0x332d7b);
+        try {
+          if (_0xb4aae4) {
+            _0xb4aae4.close();
+          }
+        } catch {}
+      };
+      const _0x46e286 = () => {
+        if (_0x527cc3) {
+          return;
+        }
+        _0x1f9fb6();
+        _0x4618d4(new Error("Aborted: " + _0x18b016));
+      };
+      if (_0x543f93?.["aborted"]) {
+        return _0x46e286();
+      }
+      _0x543f93?.["addEventListener"]("abort", _0x46e286);
+      const _0x332d7b = setTimeout(() => {
+        if (_0x527cc3) {
+          return;
+        }
+        _0x1f9fb6();
+        _0x4618d4(new Error("Timeout: " + _0x18b016));
+      }, _0x1eca45);
+      try {
+        _0xb4aae4 = io(_0x18b016, {
+          'reconnection': false,
+          'path': "/client/socket.io",
+          'transports': ["websocket"]
+        });
+        _0xb4aae4.on("connect", () => {
+          if (_0x527cc3) {
+            return;
+          }
+          console.log("checkWsAvailable: %s connect", _0x18b016);
+          _0x527cc3 = true;
+          _0x543f93?.["removeEventListener"]("abort", _0x46e286);
+          _0x534d45(_0xb4aae4);
+        });
+        _0xb4aae4.on("connect_error", () => {
+          if (_0x527cc3) {
+            return;
+          }
+          _0x1f9fb6();
+          _0x543f93?.["removeEventListener"]("abort", _0x46e286);
+          _0x4618d4(new Error("Connect Error: " + _0x18b016));
+        });
+        _0xb4aae4.on("disconnect", () => {
+          if (_0x527cc3) {
+            return;
+          }
+          _0x1f9fb6();
+          _0x543f93?.["removeEventListener"]("abort", _0x46e286);
+          _0x4618d4(new Error("Disconnected: " + _0x18b016));
+        });
+      } catch (_0x27640d) {
+        _0x1f9fb6();
+        _0x543f93?.["removeEventListener"]("abort", _0x46e286);
+        _0x4618d4(_0x27640d);
+      }
+    });
+  },
+  'translationCenterLocation'(_0x7d13b4, _0xae44e) {
+    const _0x1579c7 = _0x7d13b4.x;
+    const _0x3a195a = _0x7d13b4.y;
+    return "left: " + _0x1579c7 / 0x500 * 0x64 + "%; bottom: " + (0x2d0 - _0x3a195a) / 0x2d0 * 0x64 + '%;';
+  },
+  'startDragLeftRocker'(_0x57abce) {
+    if (!this.isEditKeyboard) {
+      return;
+    }
+    const _0xcd25ad = _0x57abce.touches ? _0x57abce.touches[0x0].clientX : _0x57abce.clientX;
+    const _0x122cb8 = _0x57abce.touches ? _0x57abce.touches[0x0].clientY : _0x57abce.clientY;
+    const _0x4465fc = this.currentGameConfig.center;
+    const _0x3242b8 = _0x4465fc.x;
+    const _0x31a62d = _0x4465fc.y;
+    const _0x45a5a6 = _0x2fabff => {
+      const _0x5ca50c = _0x2fabff.touches ? _0x2fabff.touches[0x0].clientX : _0x2fabff.clientX;
+      const _0x12da76 = _0x2fabff.touches ? _0x2fabff.touches[0x0].clientY : _0x2fabff.clientY;
+      const _0x175020 = _0x5ca50c - _0xcd25ad;
+      const _0x2aed8e = _0x12da76 - _0x122cb8;
+      const _0x2adf49 = _0x3242b8 + _0x175020 * (0x500 / window.innerWidth);
+      const _0x27b688 = _0x31a62d + _0x2aed8e * (0x2d0 / window.innerHeight);
+      _0x4465fc.x = Math.round(_0x2adf49);
+      _0x4465fc.y = Math.round(_0x27b688);
+    };
+    const _0x548efa = () => {
+      window.removeEventListener("mousemove", _0x45a5a6);
+      window.removeEventListener("mouseup", _0x548efa);
+      window.removeEventListener("touchmove", _0x45a5a6);
+      window.removeEventListener("touchend", _0x548efa);
+    };
+    window.addEventListener("mousemove", _0x45a5a6);
+    window.addEventListener("mouseup", _0x548efa);
+    window.addEventListener("touchmove", _0x45a5a6, {
+      'passive': false
+    });
+    window.addEventListener("touchend", _0x548efa);
+  },
+  'screenDirection'() {
+    let _0x3adaf9 = this;
+    setTimeout(() => {
+      _0x3adaf9.resizeCount++;
+      _0x3adaf9.changeOrientation(_0x3adaf9.direction);
+    }, 0x64);
+  },
+  'reportStates'() {
+    this.dataChannelStartTimestamp = new Date().getTime();
+    if (this.dataChannel != null && this.dataChannel.readyState === "open") {
+      this.dataChannel.send("stats>");
+    }
+    setTimeout(() => {
+      this.reportStates();
+    }, this.initParams.statInterval);
+  },
+  'adjustPlayoutDelayFromStats'(_0x3deb91) {
+    const _0x10e07c = _0x3deb91.jitter ?? 0x1;
+    const _0x41698e = _0x3deb91.retransmittedPacketsReceived ?? 0x0;
+    const _0x1c921f = _0x3deb91.packetsReceived ?? 0x1;
+    const _0x47a22e = _0x3deb91.jitterBufferEmittedCount ?? 0x1;
+    const _0x56fd44 = _0x3deb91.jitterBufferMinimumDelay ?? 0x0;
+    const _0x3323d1 = _0x1c921f > 0x0 ? _0x41698e / _0x1c921f : 0x1;
+    const _0x1ef816 = _0x47a22e > 0x0 ? _0x56fd44 / _0x47a22e * 0x3e8 : 0x64;
+    let _0x56d386 = 0.2;
+    if (_0x10e07c < 0.005 && _0x3323d1 < 0.05 && _0x1ef816 < 0x46) {
+      _0x56d386 = 0.04;
+    } else if (_0x10e07c < 0.01 && _0x3323d1 < 0.1 && _0x1ef816 < 0x64) {
+      _0x56d386 = 0.1;
+    } else {
+      _0x56d386 = 0.2;
+    }
+    for (const _0x11d804 of this.pc.getReceivers()) {
+      if (_0x11d804.jitterBufferTarget !== undefined) {
+        _0x11d804.jitterBufferTarget = _0x56d386;
+      }
+      if (_0x11d804.playoutDelayHint !== undefined) {
+        _0x11d804.playoutDelayHint = _0x56d386;
+      }
+      if (_0x11d804.jitterBufferDelayHint !== undefined) {
+        _0x11d804.jitterBufferDelayHint = _0x56d386;
+      }
+    }
+  },
+  'getStats'() {
+    let _0xaee9f3 = this;
+    this.pc.getStats().then(_0x96c0ec => {
+      _0x96c0ec.forEach(_0xc6558a => {
+        if (_0xc6558a.mediaType === "video" && _0xc6558a.type === "inbound-rtp") {
+          _0xaee9f3.videoStats = _0xc6558a;
+          this.adjustPlayoutDelayFromStats(_0xc6558a);
+        }
+        if (_0xc6558a.type === "candidate-pair" && _0xc6558a.nominated) {
+          this.dataChannelDelay = _0xc6558a.currentRoundTripTime * 0x3e8;
+          this.dataChannelDelay = this.dataChannelDelay > 0x3e7 ? 0x3e7 : this.dataChannelDelay;
+        }
+        if (_0xc6558a.type === "peer-connection") {
+          if (!this.startTime) {
+            this.startTime = _0xc6558a.timestamp;
+          }
+          let _0x5ab818 = Math.floor((_0xc6558a.timestamp - this.startTime) / 0x3e8 / 0x3c);
+          if (_0x5ab818 > 0x0 && _0x5ab818 < 0x1f && !this.liveTimeSet.includes(_0x5ab818)) {
+            this.liveTimeSet.push(_0x5ab818);
+            let _0x910010 = "play_for_" + _0x5ab818 + "_min";
+            gtag("event", _0x910010);
+          }
+        }
+      });
+    })["catch"](_0x30da0f => {
+      console.error(_0x30da0f);
+    });
+    setTimeout(() => {
+      this.getStats();
+    }, 0x3e8);
+  },
+  'reportCoordinator'() {
+    if (this.statesBWE) {
+      log.info(this.statesBWE);
+      this.socket.emit("metrics", "bwe:" + (this.statesBWE / 0x400 / 0x400).toFixed(0x3) + ";rtt:" + this.statesRTT + ";fpsin:" + this.statesFpsIn + ";fpssent:" + this.statesFpsSent + ";txbitrate:" + 0 .toFixed(0x3) + ";encodeMs:0;touchcount:0;videoPaused:" + (this.$refs.remoteVideo && this.$refs.remoteVideo.paused) + ";foreground:true");
+      this.socket.emit("metrics", "ice state: " + this.pc.iceConnectionState + " signaling state: " + this.pc.signalingState + " iceGatheringState: " + this.pc.iceGatheringState);
+    }
+    setTimeout(() => {
+      this.reportCoordinator();
+    }, 0xbb8);
+  },
+  'changeOrientation'(_0x4e3d0f) {
+    this.pingOrient();
+    this.inputOrient();
+    this.keyboardOrient();
+    this.menuOrient();
+    const _0x37d609 = this.$refs.gameDiv.clientHeight;
+    const _0x54172b = this.$refs.gameDiv.clientWidth;
+    let _0x4ca4ab;
+    let _0x2b8e24;
+    const _0x7e656a = _0x4e3d0f === 0x1;
+    const _0x496015 = this.screenWidth / this.screenHeight;
+    if (_0x7e656a) {
+      _0x4ca4ab = _0x37d609;
+      _0x2b8e24 = Math.round(_0x37d609 / _0x496015);
+      if (_0x2b8e24 > _0x54172b) {
+        _0x2b8e24 = _0x54172b;
+        _0x4ca4ab = Math.round(_0x54172b * _0x496015);
+      }
+      this.$refs.remoteWrapper.style.transform = "rotate(270deg)";
+    } else if (_0x4e3d0f === 0x0) {
+      _0x4ca4ab = _0x54172b;
+      _0x2b8e24 = Math.round(_0x54172b / _0x496015);
+      if (_0x2b8e24 > _0x37d609) {
+        _0x2b8e24 = _0x37d609;
+        _0x4ca4ab = Math.round(_0x37d609 * _0x496015);
+      }
+      this.videoWidth = _0x4ca4ab;
+      this.videoHeight = _0x2b8e24;
+      this.$refs.remoteWrapper.style.transform = "rotate(0deg)";
+      this.$refs.remoteWrapper.style.right = "auto";
+      this.$refs.remoteWrapper.style.bottom = Math.abs((_0x4ca4ab - _0x2b8e24) / 0x2) + '';
+    }
+    console.log("changeOrientation: val:%d, %d, %d, %s, %s", _0x4e3d0f, _0x37d609, _0x54172b, _0x496015, _0x7e656a);
+    this.videoWidth = _0x4ca4ab;
+    this.videoHeight = _0x2b8e24;
+    if (this.rotation === 0x1) {
+      this.$refs.remoteVideo.style.width = this.videoHeight + 'px';
+      this.$refs.remoteVideo.style.height = this.videoWidth + 'px';
+      this.$refs.remoteCanvas.style.width = this.videoHeight + 'px';
+      this.$refs.remoteCanvas.style.height = this.videoWidth + 'px';
+    } else {
+      this.$refs.remoteVideo.style.width = this.videoWidth + 'px';
+      this.$refs.remoteVideo.style.height = this.videoHeight + 'px';
+      this.$refs.remoteCanvas.style.width = this.videoWidth + 'px';
+      this.$refs.remoteCanvas.style.height = this.videoHeight + 'px';
+    }
+    const _0x6002a1 = !(this.rotation === 0x1 || _0x7e656a);
+    this.keyRotate = _0x6002a1;
+    this.iconRotate = _0x37d609 > _0x54172b;
+  },
+  'reconnectStreaming'() {
+    log.info("!!! reconnectStreaming");
+    log.info("streaming: " + this.streamingOn + ", getout = " + this.getout);
+    if (this.streamingOn || this.getout) {
+      return;
+    }
+    if (this.socket) {
+      log.info("### close old socket if exists");
+      this.socket.close();
+    }
+    this.connectStreaming();
+  },
+  'connectStreaming'() {
+    this.createPeerConnection();
+    this.connectSocket();
+  },
+  async 'connectSocket'() {
+    this.listenKeyup();
+    this.listenKeydown();
+    this.pushSteps("Finding the fastest server...");
+    let _0x2dcb5b = this.coordinatorUrl;
+    let _0x1cfd81 = this.coordinatorTunnel;
+    let _0x427b9a = this.coordinatorCloudfront;
+    if (this.androidInstanceId) {
+      try {
+        const _0x5c8d33 = JSON.parse(atob(this.androidInstanceId));
+        _0x2dcb5b = _0x5c8d33.coorUrl;
+      } catch (_0xa0fda1) {
+        console.error("android_instance_id parse error", _0xa0fda1);
+      }
+    }
+    const _0x2d3765 = [...new Set([_0x2dcb5b, _0x1cfd81, _0x427b9a])].filter(Boolean);
+    const _0x3a99f2 = new AbortController();
+    let _0x2df4d5 = null;
+    try {
+      const _0x33f95b = _0x2d3765.map(_0x5411d9 => this.checkWsAvailable(_0x5411d9, 0x2710, _0x3a99f2.signal));
+      _0x2df4d5 = await Promise.any(_0x33f95b);
+      _0x3a99f2.abort();
+      console.log("Winner WebSocket found:", _0x2df4d5.io.uri);
+    } catch (_0x306ea4) {
+      let _0x485b8f = window.location.hostname;
+      if (_0x2dcb5b && _0x2dcb5b.includes("nenly.cn")) {
+        _0x485b8f = _0x2dcb5b.replace("nenly.cn", "viewoncloud.com");
+      }
+      try {
+        _0x2df4d5 = await this.checkWsAvailable(_0x485b8f, 0x2710, null);
+      } catch (_0xfae1f0) {
+        this.pushSteps("Unable to connect to the server. Please check your network.");
+        return;
+      }
+    }
+    if (!_0x2df4d5 || !_0x2df4d5.connected) {
+      console.log(_0x2df4d5);
+      this.pushSteps("Failed to connect to the server.");
+      return;
+    }
+    this.socket = _0x2df4d5;
+    this.selectWsUrl = _0x2df4d5.io.uri;
+    this.socket.io.opts.reconnection = true;
+    this.socket.io.opts.reconnectionAttempts = 0xa;
+    this.socket.io.opts.reconnectionDelay = 0x3e8;
+    if (this.selectWsUrl.includes("viewoncloud")) {
+      this.pushSteps("Use Advanced Server");
+    } else {
+      this.pushSteps("Use Base Server");
+    }
+    this.socketBind();
+  },
+  'socketBind'() {
+    let _0x51354c = this;
+    setTimeout(() => {
+      console.log("start join room");
+      _0x51354c.joinRoom();
+    }, 0x5dc);
+    this.socket.on("connect", () => {
+      gtag("event", "socket_connected");
+      _0x51354c.pushSteps("Server found");
+      this.loadingProgress = 0x1e;
+    });
+    this.socket.on("action_done2", _0x49a988 => {
+      this.socket.emit("metrics", "join room");
+      this.socket.emit("metrics", "ready to join room");
+      this.socket.emit("register", {
+        'roomid': _0x49a988.signalingRoomId,
+        'clientid': "1111111"
+      });
+    });
+    this.socket.on("msg", _0x39aaac => {
+      clearTimeout(this.clientRegisterTimer);
+      this.clientRegisterTimer = null;
+      if (_0x39aaac.type) {
+        switch (_0x39aaac.type) {
+          case "offer":
+            if (this.joinRoomTimer) {
+              console.log("clear timer: joinRoomTimer ");
+              clearTimeout(this.joinRoomTimer);
+            }
+            _0x51354c.pushSteps("Waiting for screen connection");
+            this.loadingProgress = 0x32;
+            gtag("event", "receive_offer");
+            if (this.codec_type != 0x0) {
+              _0x39aaac.sdp = this.priorCodecType(_0x39aaac.sdp, this.codec_type);
+            }
+            if (this.codec === "VP8" || this.codec === "H264") {
+              _0x39aaac.sdp = this.setMediaCodec(_0x39aaac.sdp, "video", "receive", this.codec);
+            }
+            _0x39aaac.sdp = this.priorCodecType(_0x39aaac.sdp, 0x64);
+            _0x39aaac.sdp = this.insertRRTRBoth(_0x39aaac.sdp);
+            this.oldOffer = _0x39aaac;
+            this.pc.setRemoteDescription(new RTCSessionDescription(_0x39aaac));
+            this.createAnswer();
+            break;
+          case "answer":
+            this.pc.setRemoteDescription(new RTCSessionDescription(_0x39aaac));
+            break;
+          case "candidate":
+            this.pc.addIceCandidate(new RTCIceCandidate({
+              'sdpMLineIndex': _0x39aaac.label,
+              'candidate': _0x39aaac.candidate
+            }));
+            break;
+          case "leave":
+            log.info("msg leave");
+            break;
+          default:
+            break;
+        }
+      }
+    });
+    this.socket.on("no_free_android", () => {
+      log.info("### no_free_android");
+    });
+    this.socket.on("getout", _0x53b449 => {
+      clearTimeout(this.joinRoomTimer);
+      clearTimeout(this.clientRegisterTimer);
+      this.clientRegisterTimer = null;
+      this.streamingOn = false;
+      _0x53b449 = JSON.parse(_0x53b449);
+      if (_0x53b449.errorCode === 0x1) {
+        this.pushSteps("Server is busy. Please return to the game list and try again");
+      }
+      if (_0x53b449.errorCode === 0xa) {
+        _0x51354c.pushSteps("Screen connected successfully");
+        gtag("event", "receive_stream");
+        this.streamingOn = true;
+        this.socket.close();
+        return;
+      }
+      if (_0x53b449.errorCode === 0x7 || _0x53b449.errorCode === 0xb) {
+        log.info("Connection error, " + _0x53b449.msg);
+        this.pushSteps("Server is busy. Please return to the game list and try again");
+        this.socket.close();
+        return;
+      }
+      if (_0x53b449.errorCode === 0xc) {
+        log.info("Connection error, " + _0x53b449.msg);
+        this.pushSteps("Connection failed. Please return to the game list and try again");
+        this.socket.close();
+        return;
+      }
+      this.parentPostMessage({
+        'start_cloud_game': false
+      });
+    });
+    this.socket.on("error", _0x19eb12 => {
+      loading();
+      _0x51354c.dataChannel.close();
+      _0x51354c.pc.close();
+      _0x51354c.createPeerConnection();
+      log.info("error:" + JSON.stringify(_0x19eb12));
+    });
+    this.socket.on("disconnect", _0x6cab23 => {
+      log.info("disconnect:" + JSON.stringify(_0x6cab23));
+    });
+  },
+  'getIP'(_0xee74de) {
+    const _0x1b92ef = _0xee74de.match(/(\d{1,3}\.){3}\d{1,3}/);
+    return _0x1b92ef ? _0x1b92ef[0x0] : null;
+  },
+  'insertRRTRBoth'(_0x1d5cf1) {
+    return _0x1d5cf1.replace(/(m=video.*\r\n)/, "$1a=rtcp-xr:rrtr\r\n").replace(/(m=audio.*\r\n)/, "$1a=rtcp-xr:rrtr\r\n");
+  },
+  'joinRoom'() {
+    if (this.initParams.gameName !== "false" && this.game == null) {
+      this.game = this.initParams.gameName;
+    }
+    this.pushSteps("Client has joined the room");
+    this.loadingProgress = 0x28;
+    let _0x19a9ec = {
+      'screenRes': this.screenWidth + 'x' + this.screenHeight,
+      'game': this.game,
+      'userId': this.userId,
+      'slotId': this.userId + '@' + this.game,
+      'instanceId': this.androidInstanceId
+    };
+    this.socket.emit("client_register", _0x19a9ec);
+    console.log("joinRoom retry timer started");
+    clearTimeout(this.joinRoomTimer);
+    this.joinRoomTimer = setTimeout(() => {
+      this.joinRoomCount++;
+      if (this.joinRoomCount >= 0x3) {
+        swal.fire({
+          'theme': "material-ui-dark",
+          'icon': "error",
+          'title': "Unable to Join Session",
+          'text': "We couldn't connect to the game session after several attempts. Please return to the lobby and try again.",
+          'showConfirmButton': true,
+          'allowOutsideClick': false,
+          'willClose': () => {
+            window.location.href = "./main.svg";
+            ;
+          }
+        });
+        return;
+      }
+      console.log("joinRoom retry:", this.joinRoomCount);
+      this.joinRoom();
+    }, 0xbb8);
+    this.socket.emit("metrics", navigator.userAgent);
+  },
+  'createDataChannel'() {
+    let _0x3d4c71 = {
+      'ordered': true,
+      'reliable': true
+    };
+    let _0x1cac11 = this.pc.createDataChannel("config", _0x3d4c71);
+    _0x1cac11.onerror = _0x3d72d5 => {
+      log.info("Data Channel Error: " + _0x3d72d5);
+      if (this.socket) {
+        this.socket.emit("metrics", "data channel error");
+      }
+    };
+    _0x1cac11.onmessage = _0x33bffe => {
+      this.handleDCMessage(_0x33bffe.data);
+    };
+    _0x1cac11.onopen = () => {
+      log.info("Data Channel opened: " + _0x1cac11.readyState);
+      if (_0x1cac11.readyState !== "open") {
+        _0x1cac11.close();
+        _0x1cac11 = null;
+        this.createDataChannel();
+      } else {
+        this.dataChannel.send("res>" + this.screenWidth + 'x' + this.screenHeight);
+        this.getStats();
+        if (this.socket) {
+          this.socket.emit("metrics", "data channel open");
+        }
+      }
+    };
+    _0x1cac11.onclose = () => {
+      log.info("Data Channel Closed");
+      this.pc.close();
+      this.pc = null;
+      this.dataChannel = null;
+      if (this.socket) {
+        this.socket.emit("metrics", "data channel closed");
+      }
+      if (!this.noTime) {
+        Swal.fire({
+          'theme': "material-ui-dark",
+          'icon': "warning",
+          'title': "Session Ended",
+          'text': "Your game session has ended. Please return to the lobby to start a new session.",
+          'confirmButtonText': "Return to Lobby",
+          'showConfirmButton': true,
+          'allowOutsideClick': false,
+          'timer': 0x2710,
+          'timerProgressBar': true,
+          'willClose': () => {
+            window.location.href = "./main.svg";
+            ;
+          }
+        });
+      }
+      this.streamingOn = false;
+      this.parentPostMessage({
+        'start_cloud_game': false
+      });
+    };
+    this.dataChannel = _0x1cac11;
+  },
+  'fullScreen'() {
+    const _0x21f949 = document.documentElement;
+    if (_0x21f949.requestFullscreen) {
+      _0x21f949.requestFullscreen();
+    } else {
+      if (_0x21f949.msRequestFullscreen) {
+        _0x21f949.msRequestFullscreen();
+      } else {
+        if (_0x21f949.mozRequestFullScreen) {
+          _0x21f949.mozRequestFullScreen();
+        } else if (_0x21f949.webkitRequestFullscreen) {
+          _0x21f949.webkitRequestFullscreen();
+        }
+      }
+    }
+  },
+  'exitFullScreen'() {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+    } else {
+      if (document.webkitExitFullscreen) {
+        document.webkitExitFullscreen();
+      } else {
+        if (document.mozCancelFullScreen) {
+          document.mozCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen();
+        }
+      }
+    }
+  },
+  'handleDCMessage'(_0x5b156b) {
+    _0x5b156b = _0x5b156b.split('>');
+    let _0x3294f8 = _0x5b156b[0x0];
+    if (_0x3294f8 !== "stats" && _0x3294f8 !== "inputDelay" && _0x3294f8 !== "bweReport") {
+      log.info("~~~", _0x5b156b);
+    }
+    let _0x9e7661 = this;
+    if (_0x3294f8 === "hide_cursor") {
+      if (!this.exitingPointerLock) {
+        this.cursorHide = _0x5b156b[0x1] === '1';
+      }
+    } else {
+      if (_0x3294f8 === "rotation") {
+        this.loadingProgress = 0x64;
+        setTimeout(() => {
+          const _0x9e1945 = document.getElementById("loading");
+          if (_0x9e1945) {
+            _0x9e1945.style.display = "none";
+          }
+        }, 0x3e8);
+        if (!_0x9e7661.sendStartGame) {
+          _0x9e7661.parentPostMessage({
+            'start_cloud_game': true
+          });
+          _0x9e7661.sendStartGame = true;
+          _0x9e7661.changeIME();
+          _0x9e7661.rotateScreenDC();
+        }
+        this.rotation = parseInt(_0x5b156b[0x1]);
+        console.log("received new rotation: " + this.rotation);
+        this.rotateHandler();
+      } else {
+        if (_0x3294f8 === "touchState") {
+          this.enableTouch = _0x5b156b[0x1] === "true";
+        } else {
+          if (_0x3294f8 === "remotePay") {
+            if (window.android) {
+              window.android.remotePay(_0x5b156b[0x1]);
+            }
+          } else {
+            if (_0x3294f8 === "keyboard") {
+              console.log(_0x5b156b);
+              if (_0x5b156b[0x1].startsWith("show")) {
+                this.inputTextShow = true;
+                this.sendDataChannelMessage("softinput>height:1");
+                this.inputTextStr = '';
+                this.prevInputTextStr = '';
+                this.sendText();
+                setTimeout(() => {
+                  _0x9e7661.$refs.input.focus();
+                }, 0x64);
+              } else if (_0x5b156b[0x1].startsWith("hide")) {
+                this.inputTextShow = false;
+                this.inputTextStr = '';
+                this.prevInputTextStr = '';
+              }
+            } else {
+              if (_0x3294f8 === "stats") {
+                let _0x3a874a = _0x5b156b[0x1].split(',');
+                for (let _0x21cd92 = 0x0; _0x21cd92 < _0x3a874a.length; _0x21cd92++) {
+                  let _0x517524 = _0x3a874a[_0x21cd92].split(':');
+                  if (_0x517524[0x0] === "googAvailableSendBandwidth") {
+                    let _0x10b40f = _0x517524[0x1];
+                    let _0x35e020 = Number(_0x10b40f).toLocaleString("fullwide", {
+                      'useGrouping': false
+                    });
+                    this.statesBWE = _0x35e020;
+                  } else {
+                    if (_0x517524[0x0] === "googTransmitBitrate") {
+                      this.statesTxBitrate = _0x517524[0x1];
+                    } else {
+                      if (_0x517524[0x0] === "googAvgEncodeMs") {
+                        this.statesEncodeMs = _0x517524[0x1];
+                      } else {
+                        if (_0x517524[0x0] === "googFrameRateInput") {
+                          this.statesFpsIn = _0x517524[0x1];
+                        } else {
+                          if (_0x517524[0x0] === "googFrameRateSent") {
+                            this.statesFpsSent = _0x517524[0x1];
+                          } else {
+                            if (_0x517524[0x0] === "googRtt") {
+                              this.statesRTT = _0x517524[0x1];
+                              if (Number(this.statesRTT) < 0x0) {
+                                this.statesRTT = 0x0;
+                              }
+                            } else {
+                              if (_0x517524[0x0] === "googCodecName" && _0x517524[0x1] !== '') {
+                                this.statesCodecName = _0x517524[0x1];
+                              } else {
+                                if (_0x517524[0x0] === "googFrameWidthSent") {
+                                  this.statesFrameWidth = _0x517524[0x1];
+                                } else {
+                                  if (_0x517524[0x0] === "googFrameHeightSent") {
+                                    this.statesFrameHeight = _0x517524[0x1];
+                                  } else if (_0x517524[0x0] === "bytesSent") {
+                                    this.statesBytesSent = _0x517524[0x1];
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              } else {
+                if (_0x3294f8 === "cloudData") {
+                  window.parent.postMessage(_0x5b156b[0x1], '*');
+                  let _0x319b9a = eval('(' + _0x5b156b[0x1] + ')');
+                  if (_0x319b9a.loading_done) {
+                    this.loadingDoneTime = Date.now();
+                    this.sendMetric("loading_done", {
+                      'game': this.game,
+                      'env': this.initParams.env,
+                      'delay': this.loadingDoneTime - this.openPageTime
+                    });
+                  }
+                } else {
+                  if (_0x3294f8 === "pod_name") {
+                    this.podName = _0x5b156b[0x1];
+                    log.info("%c podName", "color: blue; font-size: 14px", this.podName);
+                  } else {
+                    if (_0x3294f8 === "kickout") {
+                      this.getout = true;
+                      this.socket.close();
+                      if (_0x5b156b[0x1] === "no_time") {
+                        this.noTime = true;
+                        Swal.fire({
+                          'theme': "material-ui-dark",
+                          'icon': "warning",
+                          'title': "Session Ended",
+                          'text': "Today's free game time has been used up. Purchase a plan to continue playing.",
+                          'confirmButtonText': "Return to HomePage",
+                          'showConfirmButton': true,
+                          'allowOutsideClick': false,
+                          'allowEscapeKey': false
+                        }).then(() => {
+                          window.location.href = "./main.svg";
+                          ;
+                        });
+                      }
+                      log.info("%c client kickout", "color: red; font-size: 14px", _0x5b156b[0x1]);
+                    } else {
+                      if (_0x3294f8 === "locale") {
+                        this.podLocale = _0x5b156b[0x1];
+                      } else {
+                        if (_0x3294f8 === "gms") {
+                          if (!this.getWithExpire("disable_gms_alert")) {
+                            Swal.fire({
+                              'theme': "material-ui-dark",
+                              'icon': "warning",
+                              'title': "Safety Notice",
+                              'text': "When accessing your Google account on our cloud server, expect notification from Google regarding the login from a new device (Galaxy S22) and location. This is expected, and we'll ensure your account's safety.",
+                              'confirmButtonText': 'OK',
+                              'showConfirmButton': true,
+                              'allowOutsideClick': false,
+                              'allowEscapeKey': false
+                            }).then(() => {
+                              this.setWithExpire("disable_gms_alert", '1', 86400000);
+                            });
+                            ;
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  'pushSteps'(_0x5df70e) {
+    const _0x4e0fe0 = document.getElementById("step-msg");
+    if (_0x4e0fe0) {
+      _0x4e0fe0.textContent = _0x5df70e;
+    }
+    log.info("%c%s", "color: #939597; font-size: 14px", _0x5df70e);
+    this.steps.push(new Date().getTime() + ':' + _0x5df70e);
+  },
+  'rotateHandler'() {
+    const _0x1c05ac = this.$refs.gameDiv.clientHeight;
+    const _0x14216e = this.$refs.gameDiv.clientWidth;
+    let _0x31fe81 = this.$refs.remoteVideo.offsetWidth;
+    let _0x21e3de = this.$refs.remoteVideo.offsetHeight;
+    if (this.rotation === 0x1) {
+      this.$refs.remoteVideo.style.width = _0x21e3de + 'px';
+      this.$refs.remoteVideo.style.height = _0x31fe81 + 'px';
+      this.$refs.remoteCanvas.style.width = _0x21e3de + 'px';
+      this.$refs.remoteCanvas.style.height = _0x31fe81 + 'px';
+      this.isRotate = true;
+      this.$refs.remoteCanvas.style.transformOrigin = (this.screenWidth / this.screenHeight / 0x2 * 0x64).toFixed(0x2) + "% center";
+      this.$refs.remoteVideo.style.transformOrigin = (this.screenWidth / this.screenHeight / 0x2 * 0x64).toFixed(0x2) + "% center";
+      this.isRotateScreen = _0x14216e <= _0x1c05ac;
+    } else {
+      this.$refs.remoteVideo.style.width = _0x31fe81 + 'px';
+      this.$refs.remoteVideo.style.height = _0x21e3de + 'px';
+      this.$refs.remoteCanvas.style.width = _0x31fe81 + 'px';
+      this.$refs.remoteCanvas.style.height = _0x21e3de + 'px';
+      this.isRotate = false;
+      this.isRotateScreen = _0x14216e > _0x1c05ac;
+    }
+    this.changeOrientation(this.direction);
+  },
+  'parentPostMessage'(_0x23e125) {
+    let _0x1efa12 = JSON.stringify(_0x23e125);
+    window.parent.postMessage(_0x1efa12, '*');
+  },
+  'handleTrack'(_0x18f05f) {
+    let _0x401d2c = this;
+    log.info("handle track");
+    _0x18f05f.track.onunmute = () => {
+      if (_0x18f05f.track.kind === "video") {
+        if (_0x401d2c.$refs.remoteVideo.srcObject !== _0x18f05f.streams[0x0]) {
+          log.info("bind video");
+          let _0x384a5b = navigator.userAgent;
+          let _0x37267f = !!_0x384a5b.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/);
+          if (_0x37267f || _0x401d2c.initParams.enableFullScreen) {
+            if (_0x401d2c.$refs.remoteVideo.paused) {
+              _0x401d2c.showPlayBtn = true;
+            }
+          }
+          _0x401d2c.streamingConnectedTime = Date.now();
+          _0x401d2c.$refs.remoteVideo.srcObject = _0x18f05f.streams[0x0];
+          _0x401d2c.remoteStream = _0x18f05f.streams[0x0];
+          _0x401d2c.receivers = this.pc.getReceivers();
+          _0x401d2c.pushSteps("Game stream received");
+          this.loadingProgress = 0x50;
+          if (this.socket) {
+            this.socket.emit("metrics", "videostart");
+          }
+        }
+      } else {
+        if (_0x18f05f.track.kind !== "audio") {
+          return;
+        }
+        log.info("bind audio");
+        if (_0x401d2c.$refs.remoteAudio.srcObject !== _0x18f05f.streams[0x0]) {
+          _0x401d2c.$refs.remoteAudio.srcObject = _0x18f05f.streams[0x0];
+        }
+      }
+    };
+    setTimeout(() => {
+      if (_0x401d2c.$refs.remoteVideo.srcObject == null) {
+        if (_0x401d2c.$refs.remoteVideo.srcObject !== _0x18f05f.streams[0x0]) {
+          _0x401d2c.$refs.remoteVideo.srcObject = _0x18f05f.streams[0x0];
+          _0x401d2c.remoteStream = _0x18f05f.streams[0x0];
+          if (_0x401d2c.pc) {
+            _0x401d2c.receivers = _0x401d2c.pc.getReceivers();
+          }
+          log.info("received remote stream by setTimeout");
+          if (this.socket) {
+            this.socket.emit("metrics", "videostart");
+          }
+        }
+      }
+    }, 0x3e8);
+  },
+  'startGame'() {
+    if (this.$refs.remoteVideo.paused) {
+      this.$refs.remoteVideo.play();
+      if (this.socket) {
+        this.socket.emit("metrics", "startVideo: paused remoteVideo");
+      }
+    }
+    if (this.$refs.remoteAudio.paused) {
+      this.$refs.remoteAudio.play();
+    }
+    this.showPlayBtn = false;
+  },
+  'pointerLock'() {
+    const _0x3832fb = document.getElementById("canvasCoc");
+    if (!this.cursorLock) {
+      if (_0x3832fb.requestPointerLock) {
+        _0x3832fb.requestPointerLock();
+      } else {
+        if (_0x3832fb.mozRequestPointerLock) {
+          _0x3832fb.mozRequestPointerLock();
+        } else if (_0x3832fb.webkitRequestPointerLock) {
+          _0x3832fb.webkitRequestPointerLock();
+        }
+      }
+      this.cursorLock = true;
+    } else {
+      document.exitPointerLock();
+      this.cursorLock = false;
+    }
+  },
+  'toggleMouseLock'() {},
+  'updateLeftPosition'() {
+    if (this.supportLeftRocker) {
+      let _0x27d8ae = this.leftRockerPosition.x;
+      let _0x4acfae = this.leftRockerPosition.y;
+      let _0x32a6b4 = this.dStep;
+      if (this.leftRockerPressedKeys.w) {
+        _0x4acfae -= _0x32a6b4;
+      }
+      if (this.leftRockerPressedKeys.s) {
+        _0x4acfae += _0x32a6b4;
+      }
+      if (this.leftRockerPressedKeys.a) {
+        _0x27d8ae -= _0x32a6b4;
+      }
+      if (this.leftRockerPressedKeys.d) {
+        _0x27d8ae += _0x32a6b4;
+      }
+      if (!this.currentGameConfig) {
+        return;
+      }
+      let _0x568511 = this.currentGameConfig.center;
+      const _0x89941c = _0x27d8ae;
+      const _0x273b08 = _0x4acfae;
+      const _0x5a96e3 = Math.sqrt(_0x89941c * _0x89941c + _0x273b08 * _0x273b08);
+      let _0xe71012 = false;
+      if (_0x5a96e3 > this.dRadius) {
+        _0xe71012 = true;
+        const _0x254c65 = Math.atan2(_0x273b08, _0x89941c);
+        _0x27d8ae = this.dRadius * Math.cos(_0x254c65);
+        _0x4acfae = this.dRadius * Math.sin(_0x254c65);
+      }
+      if (Math.floor(_0x27d8ae) === Math.floor(this.leftRockerPosition.x) && Math.floor(_0x4acfae) === Math.floor(this.leftRockerPosition.y)) {
+        return;
+      }
+      if (this.showTrace && this.leftRockerStart && !this.leftRockerEnd) {
+        const _0x2b1287 = this.$refs.remoteCanvas.getContext('2d');
+        if (_0x2b1287) {
+          const _0x53f90f = this.$refs.remoteCanvas.width;
+          const _0x34b7c7 = this.$refs.remoteCanvas.height;
+          const _0x2a4f7b = (_0x568511.x + _0x27d8ae) / 0x500 * _0x53f90f;
+          const _0x57a358 = (_0x568511.y + _0x4acfae) / 0x2d0 * _0x34b7c7;
+          _0x2b1287.fillStyle = "rgba(159, 242, 199, 0.5)";
+          _0x2b1287.beginPath();
+          _0x2b1287.arc(_0x2a4f7b, _0x57a358, 0x2, 0x0, Math.PI * 0x2);
+          _0x2b1287.fill();
+        }
+      }
+      if (!_0xe71012) {
+        if (_0x27d8ae > _0x4acfae) {
+          this.leftRockerRandom.y = this.leftRockerRandom.y > 0x0 ? -0x1 : 0x1;
+          _0x4acfae = _0x4acfae + this.leftRockerRandom.y;
+        } else {
+          this.leftRockerRandom.x = this.leftRockerRandom.x > 0x0 ? -0x1 : 0x1;
+          _0x27d8ae = _0x27d8ae + this.leftRockerRandom.x;
+        }
+      }
+      this.leftRockerPosition.x = _0x27d8ae;
+      this.leftRockerPosition.y = _0x4acfae;
+      const _0x4add0d = Object.values(this.leftRockerPressedKeys).some(_0x515bbe => _0x515bbe);
+      if (_0x4add0d) {
+        if (!this.leftRockerStart) {
+          const _0x5c146e = "touch>Touch start:10," + (_0x568511.x + Math.floor(this.leftRockerPosition.x)) + ',' + (_0x568511.y + Math.floor(this.leftRockerPosition.y));
+          this.sendDataChannelMessage(_0x5c146e);
+          this.leftRockerStart = true;
+          this.leftRockerEnd = false;
+        }
+        const _0x44344e = "touch>Touch move:10," + (_0x568511.x + Math.floor(this.leftRockerPosition.x)) + ',' + (_0x568511.y + Math.floor(this.leftRockerPosition.y));
+        this.sendDataChannelMessage(_0x44344e);
+      } else {
+        if (this.leftRockerStart && !this.leftRockerEnd) {
+          const _0x201c27 = "touch>Touch end:10," + (_0x568511.x + Math.floor(this.leftRockerPosition.x)) + ',' + (_0x568511.y + Math.floor(this.leftRockerPosition.y));
+          this.sendDataChannelMessage(_0x201c27);
+          this.leftRockerStart = false;
+          this.leftRockerEnd = true;
+          this.leftRockerPosition.x = 0x0;
+          this.leftRockerPosition.y = 0x0;
+        }
+      }
+    }
+  },
+  'gameLoop'() {
+    this.updateLeftPosition();
+    requestAnimationFrame(() => this.gameLoop());
+  },
+  'guid'() {
+    return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (_0x456185) {
+      let _0x586171 = Math.random() * 0x10 | 0x0;
+      let _0x5e2408 = _0x456185 === 'x' ? _0x586171 : _0x586171 & 0x3 | 0x8;
+      return _0x5e2408.toString(0x10);
+    });
+  },
+  'createPeerConnection'() {
+    try {
+      let _0x1a9fcd = this;
+      let _0x1f1b0b = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
+      this.pc = new _0x1f1b0b(this.pcConfiguration);
+      this.pc.onicecandidate = this.handleIceCandidate;
+      this.pc.oniceconnectionstatechange = function () {
+        log.info("ice connection state:" + _0x1a9fcd.pc.iceConnectionState);
+        gtag("event", "ice_connection_state_" + _0x1a9fcd.pc.iceConnectionState);
+      };
+      this.pc.onconnectionstatechange = function () {
+        log.info("connection state:" + _0x1a9fcd.pc.connectionState);
+        if (_0x1a9fcd.pc.connectionState === "failed") {
+          _0x1a9fcd.streamingOn = false;
+          _0x1a9fcd.parentPostMessage({
+            'start_cloud_game': false
+          });
+          swal.fire({
+            'theme': "material-ui-dark",
+            'icon': "warning",
+            'title': "Session Expired",
+            'text': "Your session expired after a period of inactivity. ",
+            'confirmButtonText': "Return to Lobby",
+            'showConfirmButton': true,
+            'allowOutsideClick': false,
+            'timer': 0x2710,
+            'timerProgressBar': true,
+            'willClose': () => {
+              window.location.href = "./main.svg";
+              ;
+            }
+          });
+        }
+      };
+      this.pc.onicegatheringstatechange = function () {
+        log.info("ice gathering state:" + _0x1a9fcd.pc.iceGatheringState);
+      };
+      this.pc.onsignalingstatechange = function () {
+        log.info("signaling state:" + _0x1a9fcd.pc.signalingState);
+      };
+      this.pc.ontrack = this.handleTrack;
+      this.createDataChannel();
+    } catch (_0x31ac07) {
+      this.parentPostMessage({
+        'start_cloud_game': false
+      });
+      log.info(_0x31ac07.message);
+    }
+  },
+  'changeIME'() {
+    if (this.remoteIME) {
+      this.sendDataChannelMessage("softinput>switch:remote");
+    } else {
+      this.inputTextShow = false;
+      this.sendDataChannelMessage("softinput>switch:local");
+    }
+  },
+  'rotateScreenDC'() {
+    if (this.scDirection === undefined) {
+      this.scDirection = this.direction;
+      log.info("first scDirection");
+      if (this.scDirection === 0x1) {
+        this.syncAccelerate = "sensor>accelerate:-0.56410795_9.483055_2.0590239";
+        this.syncRotate = "sensor>rotate:0.60119915_0.19365342_0.18520845_0.756958_0.0";
+      } else {
+        this.syncAccelerate = "sensor>accelerate:9.552746_0.4022933_1.6402799";
+        this.syncRotate = "sensor>rotate:0.56005067_-0.31531847_0.65358347_0.397583_0.0";
+      }
+      if (this.game === "com.android.chrome") {
+        if (!this.isMobile()) {
+          this.scDirection = 0x0;
+          this.syncAccelerate = "sensor>accelerate:9.552746_0.4022933_1.6402799";
+          this.syncRotate = "sensor>rotate:0.56005067_-0.31531847_0.65358347_0.397583_0.0";
+        } else {
+          this.scDirection = 0x1;
+          this.syncAccelerate = "sensor>accelerate:-0.56410795_9.483055_2.0590239";
+          this.syncRotate = "sensor>rotate:0.60119915_0.19365342_0.18520845_0.756958_0.0";
+        }
+      }
+      this.syncAccelerateDC();
+      return;
+    }
+    if (this.scDirection === 0x1) {
+      this.syncAccelerate = "sensor>accelerate:9.552746_0.4022933_1.6402799";
+      this.syncRotate = "sensor>rotate:0.56005067_-0.31531847_0.65358347_0.397583_0.0";
+      this.scDirection = 0x0;
+    } else {
+      this.syncAccelerate = "sensor>accelerate:-0.56410795_9.483055_2.0590239";
+      this.syncRotate = "sensor>rotate:0.60119915_0.19365342_0.18520845_0.756958_0.0";
+      this.scDirection = 0x1;
+    }
+  },
+  'syncAccelerateDC'() {
+    setInterval(() => {
+      this.sendDataChannelMessage(this.syncAccelerate);
+      this.sendDataChannelMessage(this.syncRotate);
+    }, 0x64);
+  },
+  'handleIceCandidate'(_0x261de2) {
+    if (_0x261de2.candidate) {
+      if (_0x261de2.candidate.type === "host") {
+        return;
+      }
+      let _0x3c1814 = {
+        'type': "candidate",
+        'label': _0x261de2.candidate.sdpMLineIndex,
+        'id': _0x261de2.candidate.sdpMid,
+        'candidate': _0x261de2.candidate.candidate
+      };
+      log.info("Start of candidates" + JSON.stringify(_0x3c1814));
+      this.sendMessage(_0x3c1814);
+    }
+  },
+  'createAnswer'() {
+    this.pc.createAnswer().then(_0x5292db => {
+      this.pushSteps("Local parameters have been set");
+      this.loadingProgress = 0x46;
+      if (this.bitRate > 0x0) {
+        var _0x1dce49 = _0x5292db.sdp.split("\r\n");
+        _0x1dce49.forEach((_0x248967, _0x5f051a) => {
+          if (/^a=fmtp:\d*/.test(_0x248967)) {
+            _0x1dce49[_0x5f051a] = _0x248967 + ";x-google-max-bitrate=" + this.bitRate + ";x-google-min-bitrate=1000;x-google-start-bitrate=1000";
+          } else if (/^a=mid:(1|video)/.test(_0x248967)) {
+            _0x1dce49[_0x5f051a] += "\r\nb=AS:" + this.bitRate;
+          }
+        });
+        _0x5292db.sdp = _0x1dce49.join("\r\n");
+      }
+      this.oldAnswer = _0x5292db;
+      this.pc.setLocalDescription(_0x5292db);
+      this.sendMessage(_0x5292db);
+    }, _0x4e2c02 => {
+      log.info("!!! createAnswer error：" + _0x4e2c02);
+    });
+  },
+  'setMediaCodec'(_0x58d843, _0x15c9f7, _0x2f1570, _0x541e32) {
+    let _0x16d337 = _0x15c9f7 + " " + _0x2f1570 + " codec";
+    log.info("----------------------------------");
+    if (!_0x541e32) {
+      log.info("No preference on " + _0x16d337 + '.');
+      return _0x58d843;
+    }
+    log.info("Prefer " + _0x16d337 + ": " + _0x541e32);
+    let _0x9d929f = _0x58d843.split("\r\n");
+    let _0x489a10 = -0x1;
+    for (let _0x394c01 = 0x0; _0x394c01 < _0x9d929f.length; _0x394c01++) {
+      if (_0x9d929f[_0x394c01].indexOf('m=' + _0x15c9f7) === 0x0) {
+        _0x489a10 = _0x394c01;
+        break;
+      }
+    }
+    if (_0x489a10 === -0x1) {
+      return _0x58d843;
+    }
+    let _0x3b5ce5 = null;
+    for (let _0x1b0de4 = 0x0; _0x1b0de4 < _0x9d929f.length; _0x1b0de4++) {
+      let _0x5dfa12 = this.findLineInRange(_0x9d929f, _0x1b0de4, -0x1, "a=rtpmap", _0x541e32);
+      if (_0x5dfa12 !== null) {
+        _0x3b5ce5 = this.getCodecPayloadTypeFromLine(_0x9d929f[_0x5dfa12]);
+        if (_0x3b5ce5) {
+          _0x9d929f[_0x489a10] = this.setDefaultCodec(_0x9d929f[_0x489a10], _0x3b5ce5);
+        }
+      }
+    }
+    _0x58d843 = _0x9d929f.join("\r\n");
+    return _0x58d843;
+  },
+  'findLineInRange'(_0xda8328, _0xa981f0, _0x2ad7f6, _0xdcdd29, _0x335ca4) {
+    let _0x396bcc = _0x2ad7f6 !== -0x1 ? _0x2ad7f6 : _0xda8328.length;
+    for (let _0xfc7a55 = _0xa981f0; _0xfc7a55 < _0x396bcc; ++_0xfc7a55) {
+      if (_0xda8328[_0xfc7a55].indexOf(_0xdcdd29) === 0x0) {
+        if (!_0x335ca4 || _0xda8328[_0xfc7a55].toLowerCase().indexOf(_0x335ca4.toLowerCase()) !== -0x1) {
+          return _0xfc7a55;
+        }
+      }
+    }
+    return null;
+  },
+  'getCodecPayloadTypeFromLine'(_0x48d00f) {
+    let _0x28a850 = new RegExp("a=rtpmap:(\\d+) [a-zA-Z0-9-]+\\/\\d+");
+    let _0x3b1d1e = _0x48d00f.match(_0x28a850);
+    return _0x3b1d1e && _0x3b1d1e.length === 0x2 ? _0x3b1d1e[0x1] : null;
+  },
+  'setDefaultCodec'(_0x3cbbd2, _0x32a9bc) {
+    let _0x16dc7c = _0x3cbbd2.split(" ");
+    let _0x31dfcd = _0x16dc7c.slice(0x0, 0x3);
+    _0x31dfcd.push(_0x32a9bc);
+    for (let _0x12b332 = 0x3; _0x12b332 < _0x16dc7c.length; _0x12b332++) {
+      if (_0x16dc7c[_0x12b332] !== _0x32a9bc) {
+        _0x31dfcd.push(_0x16dc7c[_0x12b332]);
+      }
+    }
+    return _0x31dfcd.join(" ");
+  },
+  'priorCodecType'(_0x4eb33a, _0x3beca0) {
+    let _0x5c661b = _0x4eb33a.split("\r\n");
+    let _0x4e9e50 = [];
+    for (let _0x1b2378 = 0x0; _0x1b2378 < _0x5c661b.length; _0x1b2378++) {
+      if (_0x5c661b[_0x1b2378].indexOf("m=video") === 0x0) {
+        _0x4e9e50[_0x1b2378] = _0x1b2378;
+      }
+    }
+    if (_0x4e9e50.length === 0x0) {
+      return _0x4eb33a;
+    }
+    _0x4e9e50.forEach(_0x5b7624 => {
+      let _0x565416 = _0x5c661b[_0x5b7624];
+      let _0x5e01da = _0x565416.split(" ");
+      let _0x7faeb2 = _0x5e01da.indexOf(_0x3beca0);
+      while (_0x7faeb2 !== -0x1) {
+        _0x5e01da.splice(_0x7faeb2, 0x1);
+        _0x7faeb2 = _0x5e01da.indexOf(_0x3beca0);
+      }
+      let _0x5135a8 = JSON.parse(JSON.stringify(_0x5e01da));
+      let _0x29a225 = (_0x182c6d, _0x4f1fd6, _0x5f1d01) => {
+        _0x5135a8[_0x4f1fd6] = _0x5f1d01;
+        for (let _0x4c87d0 = _0x4f1fd6; _0x4c87d0 < _0x182c6d.length; _0x4c87d0++) {
+          _0x5135a8[_0x4c87d0 + 0x1] = _0x182c6d[_0x4c87d0];
+        }
+        return _0x5135a8;
+      };
+      _0x5e01da = _0x29a225(_0x5e01da, 0x3, JSON.stringify(_0x3beca0));
+      const _0xb59884 = _0x5e01da.filter((_0x5e3e18, _0x2739a2, _0x5cc512) => _0x5cc512.indexOf(_0x5e3e18) === _0x2739a2);
+      _0x565416 = _0xb59884.join(" ");
+      _0x5c661b[_0x5b7624] = _0x565416;
+    });
+    _0x4eb33a = _0x5c661b.join("\r\n");
+    return _0x4eb33a;
+  },
+  'setMediaBitRate'(_0x9adbfd, _0x284076, _0x272e66) {
+    let _0x4992a5 = _0x9adbfd.split("\r\n");
+    let _0x499c5e = -0x1;
+    for (let _0x56c4e1 = 0x0; _0x56c4e1 < _0x4992a5.length; _0x56c4e1++) {
+      if (_0x4992a5[_0x56c4e1].indexOf('m=' + _0x284076) === 0x0) {
+        _0x499c5e = _0x56c4e1;
+        break;
+      }
+    }
+    if (_0x499c5e === -0x1) {
+      return _0x9adbfd;
+    }
+    _0x499c5e++;
+    while (_0x4992a5[_0x499c5e].indexOf('i=') === 0x0 || _0x4992a5[_0x499c5e].indexOf('c=') === 0x0) {
+      _0x499c5e++;
+    }
+    if (_0x4992a5[_0x499c5e].indexOf('b') === 0x0) {
+      _0x499c5e[_0x499c5e] = "b=AS:" + _0x272e66;
+      return _0x4992a5.join("\r\n");
+    }
+    let _0x53b28c = _0x4992a5.slice(0x0, _0x499c5e);
+    _0x53b28c.push("b=AS:" + _0x272e66);
+    _0x53b28c = _0x53b28c.concat(_0x4992a5.slice(_0x499c5e, _0x4992a5.length));
+    return _0x53b28c.join("\r\n");
+  },
+  'sendMessage'(_0x20ddf0) {
+    log.info("send:" + _0x20ddf0, 0x0);
+    this.socket.emit("msg", _0x20ddf0);
+  },
+  'mouseup'(_0x364dad) {
+    if (!this.$refs.remoteVideo.muted) {
+      this.$refs.remoteVideo.muted = false;
+    }
+    if (this.$refs.remoteAudio.muted) {
+      this.$refs.remoteAudio.muted = false;
+    }
+    const _0xf450a7 = document.getElementById("canvasCoc");
+    const _0x42f740 = document.pointerLockElement === _0xf450a7 || document.mozPointerLockElement === _0xf450a7 || document.webkitPointerLockElement === _0xf450a7;
+    const _0x24895e = this.currentGameConfig || {};
+    const _0x92f596 = _0x24895e.pointerLockCoordinate || {};
+    if (_0x42f740) {
+      let _0x328286 = '';
+      if (_0x364dad.button === 0x0) {
+        let _0x14b7ab = _0x92f596.lClick ?? "1060,550";
+        if (this.currentGameConfig?.["keyBoard"]?.["lClick"] && this.currentGameConfig?.["keyBoard"]?.["lClick"]?.["coordinate"] !== "0,0") {
+          _0x14b7ab = this.currentGameConfig?.["keyBoard"]?.["lClick"]?.["coordinate"];
+        }
+        _0x328286 = "touch>Touch end:5," + _0x14b7ab;
+      } else {
+        if (_0x364dad.button === 0x2) {
+          let _0x53e661 = _0x92f596.rClick ?? "1180,620";
+          if (this.currentGameConfig?.["keyBoard"]?.["rClick"] && this.currentGameConfig?.["keyBoard"]?.["rClick"]?.["coordinate"] !== "0,0") {
+            _0x53e661 = this.currentGameConfig?.["keyBoard"]?.["rClick"]?.["coordinate"];
+          }
+          _0x328286 = "touch>Touch end:9," + _0x53e661;
+        }
+      }
+      if (_0x328286) {
+        this.sendDataChannelMessage(_0x328286);
+      }
+      return;
+    }
+    if (!this.sendMove) {
+      return;
+    }
+    this.sendMove = false;
+    if (_0x364dad.button === 0x2) {
+      if (!this.supportRightClick) {
+        return;
+      }
+      this.sendDataChannelMessage("touch>Touch end:8," + (this.dEyeCenter.x + Math.floor(this.dEyePosition.x)) + ',' + (this.dEyeCenter.y + Math.floor(this.dEyePosition.y)));
+      return;
+    }
+    let _0x1ab566 = "touch>Mouse up:" + _0x364dad.button + ',' + this.resizeHandler(_0x364dad.offsetX) + ',' + this.resizeHandler(_0x364dad.offsetY);
+    this.sendDataChannelMessage(_0x1ab566);
+  },
+  'mousedown'(_0x49b404) {
+    const _0x5d5fd9 = document.getElementById("canvasCoc");
+    const _0x414423 = document.pointerLockElement === _0x5d5fd9 || document.mozPointerLockElement === _0x5d5fd9 || document.webkitPointerLockElement === _0x5d5fd9;
+    const _0x16a465 = this.currentGameConfig || {};
+    const _0x5f4075 = _0x16a465.pointerLockCoordinate || {};
+    if (_0x414423) {
+      let _0x3b05c2 = '';
+      if (_0x49b404.button === 0x0) {
+        let _0xf2d670 = _0x5f4075.lClick ?? "1060,550";
+        if (this.currentGameConfig?.["keyBoard"]?.["lClick"] && this.currentGameConfig?.["keyBoard"]?.["lClick"]?.["coordinate"] !== "0,0") {
+          _0xf2d670 = this.currentGameConfig?.["keyBoard"]?.["lClick"]?.["coordinate"];
+        }
+        _0x3b05c2 = "touch>Touch start:5," + _0xf2d670;
+      } else {
+        if (_0x49b404.button === 0x2) {
+          let _0x5f4b16 = _0x5f4075.rClick ?? "1180,620";
+          if (this.currentGameConfig?.["keyBoard"]?.["rClick"] && this.currentGameConfig?.["keyBoard"]?.["rClick"]?.["coordinate"] !== "0,0") {
+            _0x5f4b16 = this.currentGameConfig?.["keyBoard"]?.["rClick"]?.["coordinate"];
+          }
+          if (_0x5f4b16 === "0,0") {
+            return;
+          }
+          _0x3b05c2 = "touch>Touch start:9," + _0x5f4b16;
+        }
+      }
+      if (_0x3b05c2) {
+        this.sendDataChannelMessage(_0x3b05c2);
+      }
+      return;
+    }
+    if (_0x49b404.button === 0x2) {
+      if (!this.supportRightClick) {
+        return;
+      }
+      this.dEyePosition = {
+        'x': 0x0,
+        'y': 0x0
+      };
+      this.dEyeCenter = _0x16a465.rightClickCenter ?? {
+        'x': 0x280,
+        'y': 0x168
+      };
+      this.sendMove = true;
+      this.sendDataChannelMessage("touch>Touch start:8," + this.dEyeCenter.x + ',' + this.dEyeCenter.y);
+      return;
+    }
+    this.sendMove = true;
+    let _0x8c7600 = "touch>Mouse down:" + _0x49b404.button + ',' + this.resizeHandler(_0x49b404.offsetX) + ',' + this.resizeHandler(_0x49b404.offsetY);
+    this.sendDataChannelMessage(_0x8c7600);
+  },
+  'mousemove'(_0x1f47d2) {
+    const _0x4d5794 = document.getElementById("canvasCoc");
+    const _0x529cd8 = document.pointerLockElement === _0x4d5794 || document.mozPointerLockElement === _0x4d5794 || document.webkitPointerLockElement === _0x4d5794;
+    if (_0x529cd8) {
+      const _0x5a7a21 = _0x1f47d2.movementX ?? 0x0;
+      const _0x55c7bc = _0x1f47d2.movementY ?? 0x0;
+      this.moveX += _0x5a7a21 * this.mouseSensitivity;
+      this.moveY += _0x55c7bc * this.mouseSensitivity;
+      const _0x3905ed = this.$refs.remoteVideo.offsetWidth / 0x2;
+      const _0x183df3 = this.$refs.remoteVideo.offsetHeight / 0x2;
+      this.moveX = Math.max(-_0x3905ed, Math.min(_0x3905ed, this.moveX));
+      this.moveY = Math.max(-_0x183df3, Math.min(_0x183df3, this.moveY));
+      const _0x76518e = this.currentGameConfig?.["pointerLockCenter"] ?? {
+        'x': 0x280,
+        'y': 0x168
+      };
+      if (!this.pointerLockStart) {
+        let _0x5ba830 = "touch>Touch start:8," + _0x76518e.x + ',' + _0x76518e.y;
+        this.sendDataChannelMessage(_0x5ba830);
+        this.pointerLockStart = true;
+      }
+      let _0x245372 = this.resizeHandler(this.moveX);
+      let _0x582287 = this.resizeHandler(this.moveY);
+      let _0x5d8eca = "touch>Touch move:8," + (_0x76518e.x + _0x245372) + ',' + (_0x76518e.y + _0x582287);
+      this.sendDataChannelMessage(_0x5d8eca);
+      if (this.resetMoveTimer) {
+        clearTimeout(this.resetMoveTimer);
+      }
+      this.resetMoveTimer = setTimeout(() => {
+        let _0x43222b = "touch>Touch end:8," + (_0x76518e.x + _0x245372) + ',' + (_0x76518e.y + _0x582287);
+        this.sendDataChannelMessage(_0x43222b);
+        this.moveX = 0x0;
+        this.moveY = 0x0;
+        this.pointerLockStart = false;
+      }, 0xc8);
+      return;
+    }
+    if (!this.sendMove) {
+      return;
+    }
+    const _0x2ae1b0 = _0x1f47d2.buttons === 0x2;
+    const _0x173cc8 = _0x1f47d2.button === 0x0;
+    const _0x338344 = _0x173cc8 || this.alwaysSendMove;
+    if (!this.supportRightClick && _0x2ae1b0) {
+      return;
+    }
+    if (this.supportRightClick && _0x2ae1b0) {
+      let _0x5bedcb = this.dEyePosition.x + _0x1f47d2.movementX;
+      let _0x5dba71 = this.dEyePosition.y + _0x1f47d2.movementY;
+      const _0x3adb14 = _0x5bedcb;
+      const _0x5ac588 = _0x5dba71;
+      const _0x48cc08 = Math.sqrt(_0x3adb14 * _0x3adb14 + _0x5ac588 * _0x5ac588);
+      if (_0x48cc08 > this.dEyeRadius) {
+        const _0x57f5fc = Math.atan2(_0x5ac588, _0x3adb14);
+        _0x5bedcb = this.dEyeRadius * Math.cos(_0x57f5fc);
+        _0x5dba71 = this.dEyeRadius * Math.sin(_0x57f5fc);
+      }
+      this.dEyePosition.x = _0x5bedcb;
+      this.dEyePosition.y = _0x5dba71;
+      this.sendDataChannelMessage("touch>Touch move:8," + (this.dEyeCenter.x + Math.floor(_0x5bedcb)) + ',' + (this.dEyeCenter.y + Math.floor(_0x5dba71)));
+      return;
+    }
+    if (!_0x338344) {
+      return;
+    }
+    this.lastMoveEvent = _0x1f47d2;
+    let _0x49ed45 = "touch>Mouse move:" + _0x1f47d2.button + ',' + this.resizeHandler(_0x1f47d2.offsetX) + ',' + this.resizeHandler(_0x1f47d2.offsetY);
+    this.sendDataChannelMessage(_0x49ed45);
+  },
+  'mousewheel'(_0x552376) {
+    this.mousewheelFakeAndroid(_0x552376);
+  },
+  'mouseleave'(_0x3c268d) {
+    if (this.sendMove) {
+      this.mouseup(this.lastMoveEvent);
+    }
+  },
+  'mousewheelFakeAndroid'(_0x43bc70) {
+    let _0xe5dca7 = _0x43bc70.wheelDelta;
+    if (!this.zoom) {
+      return;
+    }
+    if (this.rotation === 0x1) {
+      if (_0xe5dca7 < 0x0) {
+        for (let _0x320dc2 = 0x0; _0x320dc2 <= 0x30; _0x320dc2 = _0x320dc2 + 0x10) {
+          let _0x3f8844 = '';
+          if (_0x320dc2 === 0x0) {
+            _0x3f8844 = "touch>Touch start:6,440,230:7,840,490";
+          } else if (_0x320dc2 === 0x30) {
+            _0x3f8844 = "touch>Touch end:6," + (0x1b8 + _0x320dc2) + ',' + (0xe6 + _0x320dc2 / 0x10 * 0x5) + ",:7," + (0x348 - _0x320dc2) + ',' + (0x1ea - _0x320dc2 / 0x10 * 0x5);
+          } else {
+            _0x3f8844 = "touch>Touch move:6," + (0x1b8 + _0x320dc2) + ',' + (0xe6 + _0x320dc2 / 0x10 * 0x5) + ",:7," + (0x348 - _0x320dc2) + ',' + (0x1ea - _0x320dc2 / 0x10 * 0x5);
+          }
+          setTimeout(() => {
+            this.sendDataChannelMessage(_0x3f8844);
+          }, _0x320dc2 * 2.5);
+        }
+      } else {
+        for (let _0x11d63a = 0x0; _0x11d63a <= 0x30; _0x11d63a = _0x11d63a + 0x10) {
+          let _0x4279a7 = '';
+          if (_0x11d63a === 0x0) {
+            _0x4279a7 = "touch>Touch start:6,488,250:7,792,470";
+          } else if (_0x11d63a === 0x30) {
+            _0x4279a7 = "touch>Touch end:6," + (0x1e8 - _0x11d63a) + ',' + (0xfa - _0x11d63a / 0x10 * 0x5) + ",:7," + (0x318 + _0x11d63a) + ',' + (0x1d6 + _0x11d63a / 0x10 * 0x5);
+          } else {
+            _0x4279a7 = "touch>Touch move:6," + (0x1e8 - _0x11d63a) + ',' + (0xfa - _0x11d63a / 0x10 * 0x5) + ",:7," + (0x318 + _0x11d63a) + ',' + (0x1d6 + _0x11d63a / 0x10 * 0x5);
+          }
+          setTimeout(() => {
+            this.sendDataChannelMessage(_0x4279a7);
+          }, _0x11d63a * 2.5);
+        }
+      }
+    } else {
+      if (this.rotation === 0x0) {
+        if (_0xe5dca7 < 0x0) {
+          for (let _0x545197 = 0x0; _0x545197 <= 0x30; _0x545197 = _0x545197 + 0x10) {
+            let _0x5b67e7 = '';
+            if (_0x545197 === 0x0) {
+              _0x5b67e7 = "touch>Touch start:6,240,400:7,480,800";
+            } else if (_0x545197 === 0x30) {
+              _0x5b67e7 = "touch>Touch end:6," + (0xf0 + _0x545197 / 0x10 * 0x5) + ',' + (0x190 + _0x545197) + ",:7," + (0x1e0 - _0x545197 / 0x10 * 0x5) + ',' + (0x320 - _0x545197);
+            } else {
+              _0x5b67e7 = "touch>Touch move:6," + (0xf0 + _0x545197 / 0x10 * 0x5) + ',' + (0x190 + _0x545197) + ",:7," + (0x1e0 - _0x545197 / 0x10 * 0x5) + ',' + (0x320 - _0x545197);
+            }
+            setTimeout(() => {
+              this.sendDataChannelMessage(_0x5b67e7);
+            }, _0x545197 * 2.5);
+          }
+        } else {
+          for (let _0xa7c9ea = 0x0; _0xa7c9ea <= 0x30; _0xa7c9ea = _0xa7c9ea + 0x10) {
+            let _0x18dcf4 = '';
+            if (_0xa7c9ea === 0x0) {
+              _0x18dcf4 = "touch>Touch start:6,255,448:7,465,752";
+            } else if (_0xa7c9ea === 0x30) {
+              _0x18dcf4 = "touch>Touch end:6," + (0xff - _0xa7c9ea / 0x10 * 0x5) + ',' + (0x1c0 - _0xa7c9ea) + ",:7," + (0x1d1 + _0xa7c9ea / 0x10 * 0x5) + ',' + (0x2f0 + _0xa7c9ea);
+            } else {
+              _0x18dcf4 = "touch>Touch move:6," + (0xff - _0xa7c9ea / 0x10 * 0x5) + ',' + (0x1c0 - _0xa7c9ea) + ",:7," + (0x1d1 + _0xa7c9ea / 0x10 * 0x5) + ',' + (0x2f0 + _0xa7c9ea);
+            }
+            setTimeout(() => {
+              this.sendDataChannelMessage(_0x18dcf4);
+            }, _0xa7c9ea * 2.5);
+          }
+        }
+      }
+    }
+    this.zoom = false;
+    setTimeout(() => {
+      this.zoom = true;
+    }, 0x12c);
+  },
+  'getChangedTouchesString'(_0x180b62) {
+    let _0x1c9570 = '';
+    for (let _0x5b3ccd = 0x0; _0x5b3ccd < _0x180b62.changedTouches.length; _0x5b3ccd++) {
+      let _0x3d5bc4 = _0x180b62.changedTouches[_0x5b3ccd];
+      let _0xceb802 = this.getMousePos(_0x3d5bc4.pageX, _0x3d5bc4.pageY);
+      _0x1c9570 += ':' + this.getTouchCounter(_0x3d5bc4.identifier) + ',' + _0xceb802.x + ',' + _0xceb802.y;
+    }
+    return _0x1c9570;
+  },
+  'resizeHandler'(_0x2dd1f3) {
+    let _0x396463 = 0x0;
+    let _0x3fd9ce = this.$refs.remoteVideo.offsetWidth;
+    let _0x4783fc = this.$refs.remoteVideo.offsetHeight;
+    if (_0x3fd9ce > _0x4783fc) {
+      _0x396463 = this.initParams.screenWidth / _0x3fd9ce;
+    } else {
+      _0x396463 = this.initParams.screenWidth / _0x4783fc;
+    }
+    this.scaleValue = _0x396463;
+    return Math.floor(_0x2dd1f3 * _0x396463);
+  },
+  'getMousePos'(_0x219cdb, _0x1422b2) {
+    let _0x321706 = this.$refs.containerDiv.getBoundingClientRect();
+    _0x219cdb = _0x219cdb - _0x321706.left;
+    _0x1422b2 = _0x1422b2 - _0x321706.top;
+    let _0x9f7fbd = this.$refs.containerDiv.clientHeight;
+    let _0x37adce = this.$refs.containerDiv.clientWidth;
+    let _0x5d4d47 = getComputedStyle(this.$refs.containerDiv);
+    let _0x30d6c5 = parseFloat(_0x5d4d47.paddingTop);
+    let _0x4be7da = parseFloat(_0x5d4d47.paddingBottom);
+    let _0x48ba03;
+    let _0x256d36;
+    if (this.direction === 0x0) {
+      _0x48ba03 = this.videoWidth;
+      _0x256d36 = this.videoHeight;
+    } else {
+      _0x48ba03 = this.videoHeight;
+      _0x256d36 = this.videoWidth;
+    }
+    let _0x5a8866 = (_0x9f7fbd - _0x256d36) / 0x2 - (_0x4be7da - _0x30d6c5) / 0x2;
+    let _0x1d3237 = (_0x37adce - _0x48ba03) / 0x2;
+    _0x219cdb = _0x219cdb - _0x1d3237;
+    _0x1422b2 = _0x1422b2 - _0x5a8866;
+    _0x219cdb = this.resizeHandler(_0x219cdb);
+    _0x1422b2 = this.resizeHandler(_0x1422b2);
+    if (this.rotation === 0x1 && this.direction === 0x0) {
+      return {
+        'x': Math.abs(_0x1422b2),
+        'y': Math.abs(_0x219cdb - this.screenWidth)
+      };
+    } else {
+      if (this.rotation === 0x1 && this.direction === 0x1) {
+        return {
+          'x': _0x219cdb,
+          'y': _0x1422b2
+        };
+      } else {
+        if (this.rotation === 0x0 && this.direction === 0x1) {
+          return {
+            'x': Math.abs(_0x1422b2 - this.screenWidth),
+            'y': Math.abs(_0x219cdb)
+          };
+        } else {
+          if (this.rotation === 0x0 && this.direction === 0x0) {
+            return {
+              'x': _0x219cdb,
+              'y': _0x1422b2
+            };
+          }
+        }
+      }
+    }
+    return {
+      'x': _0x219cdb,
+      'y': _0x1422b2
+    };
+  },
+  'touchstart'(_0x1df5c3) {
+    let _0xe14f1a = "touch>Touch start" + this.getChangedTouchesString(_0x1df5c3);
+    this.sendDataChannelMessage(_0xe14f1a);
+  },
+  'touchmove'(_0x4faef4) {
+    if (this.$refs.remoteVideo.muted) {
+      this.$refs.remoteVideo.muted = false;
+    }
+    if (this.$refs.remoteAudio.muted) {
+      this.$refs.remoteAudio.muted = false;
+    }
+    let _0x13c7ff = "touch>Touch move" + this.getChangedTouchesString(_0x4faef4);
+    this.sendDataChannelMessage(_0x13c7ff);
+  },
+  'touchend'(_0xa71117) {
+    if (!this.$refs.remoteVideo.muted) {
+      this.$refs.remoteVideo.muted = false;
+    }
+    if (this.$refs.remoteAudio.muted) {
+      this.$refs.remoteAudio.muted = false;
+    }
+    let _0x50615d = "touch>Touch end" + this.getChangedTouchesString(_0xa71117);
+    this.socket.emit("metrics", "bwe;;;;;;touches:1");
+    this.sendDataChannelMessage(_0x50615d);
+  },
+  'touchcancel'(_0x3953f3) {
+    let _0x13ff6b = "touch>Touch endcancel" + this.getChangedTouchesString(_0x3953f3);
+    this.sendDataChannelMessage(_0x13ff6b);
+  },
+  'listenKey'(_0x297f39) {
+    if (!_0x297f39.key) {
+      return;
+    }
+    let _0x5b58e5 = "touch>Text:" + _0x297f39.key;
+    if (_0x297f39.key.length !== 0x1) {
+      _0x5b58e5 = "touch>TextCmd:" + _0x297f39.key;
+    }
+    log.info(_0x5b58e5);
+    this.sendDataChannelMessage(_0x5b58e5);
+  },
+  'listenKeyUp'(_0x25ef5b) {
+    if (this.inputTextShow) {
+      return;
+    }
+    if (!_0x25ef5b.key) {
+      return;
+    }
+    if (this.isEditKeyboard) {
+      return;
+    }
+    if (_0x25ef5b.keyCode >= 0x70 && _0x25ef5b.keyCode <= 0x7b) {
+      return;
+    }
+    _0x25ef5b.preventDefault();
+    if (_0x25ef5b.key === '`') {
+      return;
+    }
+    this.keyDownMap[_0x25ef5b.key] = false;
+    let _0x20b10d = '';
+    if (!_0x25ef5b.altKey && this.keyDownMap.Alt) {
+      _0x20b10d = "touch>KeyUpCmd:Alt";
+      this.sendDataChannelMessage(_0x20b10d);
+      this.keyDownMap.Alt = false;
+    }
+    if (!_0x25ef5b.ctrlKey && this.keyDownMap.Control) {
+      _0x20b10d = "touch>KeyUpCmd:Control";
+      this.sendDataChannelMessage(_0x20b10d);
+      this.keyDownMap.Control = false;
+    }
+    if (!_0x25ef5b.shiftKey && this.keyDownMap.Shift) {
+      _0x20b10d = "touch>KeyUpCmd:Shift";
+      this.sendDataChannelMessage(_0x20b10d);
+      this.keyDownMap.Shift = false;
+    }
+    if (!_0x25ef5b.metaKey && this.keyDownMap.Meta) {
+      _0x20b10d = "touch>KeyUpCmd:Meta";
+      this.sendDataChannelMessage(_0x20b10d);
+      this.keyDownMap.Meta = false;
+    }
+    if (!this.currentGameConfig?.["keyBoard"]) {
+      return;
+    }
+    const _0x453129 = _0x25ef5b.key.toLowerCase();
+    if (this.supportLeftRocker && ['w', 'a', 's', 'd'].includes(_0x453129)) {
+      delete this.leftRockerPressedKeys[_0x453129];
+      if (Object.keys(this.leftRockerPressedKeys).length === 0x0) {
+        let _0x14cb3d = this.center;
+        if (!this.leftRockerEnd) {
+          this.sendDataChannelMessage("touch>Touch end:10," + (_0x14cb3d.x + Math.floor(this.leftRockerPosition.x)) + ',' + (_0x14cb3d.y + Math.floor(this.leftRockerPosition.y)));
+          this.leftRockerPosition = {
+            'x': 0x0,
+            'y': 0x0
+          };
+          this.leftRockerStart = false;
+          this.leftRockerEnd = true;
+        }
+      }
+    }
+    if (this.supportRightRocker && ['z', 'x', 'c', 'v'].includes(_0x453129)) {
+      delete this.rightRockerPressedKeys[_0x453129];
+      if (Object.keys(this.rightRockerPressedKeys).length === 0x0) {
+        let _0x5dc551 = this.currentGameConfig.rightCenter;
+        if (!this.rightRockerEnd) {
+          this.sendDataChannelMessage("touch>Touch end:11," + (_0x5dc551.x + Math.floor(this.rightRockerPosition.x)) + ',' + (_0x5dc551.y + Math.floor(this.rightRockerPosition.y)));
+          this.rightRockerPosition = {
+            'x': 0x0,
+            'y': 0x0
+          };
+          this.rightRockerStart = false;
+          this.rightRockerEnd = true;
+        }
+      }
+    }
+    const _0x2d0592 = document.querySelector(".keyboard-key-" + this.keyToKeyCode(_0x453129.toLowerCase()));
+    _0x2d0592?.["classList"]["remove"]("keyboard-key-press");
+    const _0x24b1aa = this.currentGameConfig.keyBoard[_0x453129];
+    const _0x3a3c82 = _0x24b1aa?.["coordinate"];
+    if (_0x3a3c82 && _0x3a3c82 !== "0,0") {
+      const _0x44bba4 = this.getTouchCounter(_0x453129);
+      this.sendDataChannelMessage("touch>Touch end:" + _0x44bba4 + ',' + _0x3a3c82);
+    }
+  },
+  'listenKeyDown'(_0x4507bb) {
+    if (!_0x4507bb.key) {
+      return;
+    }
+    if (this.isEditKeyboard) {
+      return;
+    }
+    if (_0x4507bb.keyCode >= 0x70 && _0x4507bb.keyCode <= 0x7b) {
+      return;
+    }
+    const _0x5cd5c5 = _0x4507bb.target.tagName.toLowerCase();
+    const _0x244050 = _0x4507bb.target.isContentEditable;
+    if (_0x5cd5c5 === "input" || _0x5cd5c5 === "textarea" || _0x244050) {
+      return;
+    }
+    _0x4507bb.preventDefault();
+    if (_0x4507bb.ctrlKey && _0x4507bb.keyCode === 0x4d) {
+      if (this.currentGameConfig?.["pointerLock"]) {
+        this.pointerLock();
+      }
+      return;
+    }
+    this.lastKeyDownCode = _0x4507bb.keyCode;
+    this.lastKeyDownTime = new Date().getTime();
+    if (this.keyDownMap[_0x4507bb.key]) {
+      return;
+    }
+    this.keyDownMap[_0x4507bb.key] = true;
+    if (!this.currentGameConfig?.["keyBoard"]) {
+      return;
+    }
+    const _0x41eeff = _0x4507bb.key.toLowerCase();
+    if (this.supportLeftRocker && ['w', 'a', 's', 'd'].includes(_0x41eeff)) {
+      this.leftRockerPressedKeys[_0x41eeff] = true;
+    }
+    if (this.supportRightRocker && ['z', 'x', 'c', 'v'].includes(_0x41eeff)) {
+      this.rightRockerPressedKeys[_0x41eeff] = true;
+    }
+    const _0x49fc4d = document.querySelector(".keyboard-key-" + this.keyToKeyCode(_0x41eeff.toLowerCase()));
+    _0x49fc4d?.["classList"]["add"]("keyboard-key-press");
+    const _0x2dea1f = this.currentGameConfig.keyBoard[_0x41eeff];
+    const _0x1e80b0 = _0x2dea1f?.["coordinate"];
+    if (_0x1e80b0 && _0x1e80b0 !== "0,0") {
+      const _0x971329 = this.getTouchCounter(_0x41eeff);
+      this.sendDataChannelMessage("touch>Touch start:" + _0x971329 + ',' + _0x1e80b0);
+    }
+  },
+  'listenKeyup'() {
+    document.addEventListener("keyup", this.listenKeyUp);
+  },
+  'listenKeyupDestroyed'() {
+    document.removeEventListener("keyup", this.listenKeyUp);
+  },
+  'listenKeydown'() {
+    document.addEventListener("keydown", this.listenKeyDown);
+  },
+  'listenKeydownDestroyed'() {
+    document.removeEventListener("keydown", this.listenKeyDown);
+  },
+  'sendDataChannelMessage'(_0x3d5f1b) {
+    if (this.showDataChannelMsg) {
+      log.info("%cDataChannel: ", "color: blue; font-size: 14px", _0x3d5f1b);
+    }
+    if (_0x3d5f1b === "key>back") {
+      if (this.dataChannel && this.dataChannel.readyState === "open") {
+        this.dataChannel.send("key>keydown:4");
+        setTimeout(() => this.dataChannel.send("key>keyup:4"), 0x32);
+        return;
+      }
+    }
+    if (this.pc && this.dataChannel && this.dataChannel.readyState === "open") {
+      if (_0x3d5f1b.includes("touch")) {
+        if (this.$refs.remoteVideo.paused) {
+          this.$refs.remoteVideo.play();
+        }
+        if (this.$refs.remoteAudio.paused) {
+          this.$refs.remoteAudio.play();
+        }
+      }
+      this.dataChannel.send(_0x3d5f1b);
+    }
+  },
+  'inputOrient'() {
+    let _0x47863b = this.$refs.gameDiv.clientWidth;
+    let _0x582707 = this.$refs.gameDiv.clientHeight;
+    let _0x32b088 = document.getElementById("input-div");
+    if (!_0x32b088) {
+      return;
+    }
+    if (_0x47863b >= _0x582707) {
+      _0x32b088.style.transform = "rotate(0)";
+      _0x32b088.style.left = '0';
+      _0x32b088.style.bottom = "20px";
+      _0x32b088.style.right = '';
+      _0x32b088.style.top = '';
+    } else {
+      _0x32b088.style.transform = "rotate(90deg)";
+      _0x32b088.style.left = "-75%";
+      _0x32b088.style.right = '0';
+      _0x32b088.style.top = "50%";
+      _0x32b088.style.bottom = "50%";
+    }
+  },
+  'pingOrient'() {
+    let _0x3e9ee8 = this.$refs.containerDiv.clientWidth;
+    let _0x266b60 = this.$refs.containerDiv.clientHeight;
+    let _0x2a734d = document.getElementById("ping");
+    if (!_0x2a734d) {
+      return;
+    }
+    if (_0x3e9ee8 >= _0x266b60) {
+      _0x2a734d.style.transform = "rotate(0)";
+      _0x2a734d.style.left = '0';
+      _0x2a734d.style.bottom = '0%';
+      _0x2a734d.style.width = _0x3e9ee8 + 'px';
+    } else {
+      _0x2a734d.style.transform = "rotate(90deg)";
+      _0x2a734d.style.width = _0x266b60 + 'px';
+      _0x2a734d.style.left = '-' + (_0x266b60 - 0x10) / 0x2 + 'px';
+      _0x2a734d.style.bottom = _0x266b60 - (_0x266b60 + 0x10) / 0x2 + 'px';
+    }
+  },
+  'keyboardOrient'() {
+    let _0x59b63b = document.getElementById("keyboard");
+    if (!_0x59b63b) {
+      return;
+    }
+    if (this.direction === 0x1) {
+      _0x59b63b.style.transform = "rotate(0)";
+      _0x59b63b.style.left = '0';
+      _0x59b63b.style.right = '0';
+      _0x59b63b.style.top = '0';
+      _0x59b63b.style.bottom = '0';
+    } else {
+      _0x59b63b.style.transform = "translate(-50%, -50%) rotate(90deg)";
+      _0x59b63b.style.left = "50%";
+      _0x59b63b.style.right = '';
+      _0x59b63b.style.top = "50%";
+      _0x59b63b.style.bottom = '';
+    }
+  },
+  'menuOrient'() {
+    let _0x4c965a = this.$refs.gameDiv.clientWidth;
+    let _0x34f605 = this.$refs.gameDiv.clientHeight;
+    let _0x338be3 = document.getElementById("menu");
+    if (!_0x338be3) {
+      return;
+    }
+    if (_0x4c965a >= _0x34f605) {
+      _0x338be3.style.transform = "rotate(0)";
+      _0x338be3.style.left = '0';
+      _0x338be3.style.right = '0';
+      _0x338be3.style.top = '0';
+      _0x338be3.style.bottom = '0';
+      _0x338be3.style.width = "100%";
+      _0x338be3.style.height = "100%";
+    } else {
+      _0x338be3.style.transform = "translate(-50%, -50%) rotate(90deg)";
+      _0x338be3.style.left = "50%";
+      _0x338be3.style.top = "50%";
+      _0x338be3.style.right = '';
+      _0x338be3.style.bottom = '';
+      _0x338be3.style.width = "100vh";
+      _0x338be3.style.height = "100vw";
+    }
+  },
+  'enterEditMode'() {
+    this.isEditKeyboard = true;
+    this.openMenu = false;
+  },
+  'startDragKey'(_0x49038a, _0xa01956) {
+    if (!this.isEditKeyboard) {
+      return;
+    }
+    const _0x55b8ad = this.currentGameConfig.keyBoard[_0xa01956];
+    if (!_0x55b8ad) {
+      return;
+    }
+    const _0x2d4940 = _0x49038a.currentTarget;
+    const _0x3aa8e9 = _0x2d4940.getBoundingClientRect();
+    this.draggingKey = _0xa01956;
+    this.offsetX = _0x49038a.clientX - _0x3aa8e9.left;
+    this.offsetY = _0x49038a.clientY - _0x3aa8e9.top;
+    this.dragStartX = _0x49038a.clientX;
+    this.dragStartY = _0x49038a.clientY;
+    this.dragMoved = false;
+    document.addEventListener("pointermove", this.onPointerMoveKey);
+    document.addEventListener("pointerup", this.endDragKey);
+  },
+  'onPointerMoveKey'(_0x1c5db0) {
+    if (!this.draggingKey) {
+      return;
+    }
+    const _0x2694b1 = this.currentGameConfig.keyBoard[this.draggingKey];
+    if (!_0x2694b1) {
+      return;
+    }
+    const _0x387f66 = document.querySelector(".keyboard");
+    const _0x5420ed = _0x387f66.getBoundingClientRect();
+    const _0x1cc6cd = document.querySelector(".keyboard-key-" + this.keyToKeyCode(_0x2694b1.key));
+    const _0x362b2f = _0x1cc6cd?.["offsetWidth"] || 0x1a;
+    const _0x106ec8 = _0x1cc6cd?.["offsetHeight"] || 0x1a;
+    if (!this.dragMoved) {
+      const _0x88fda9 = _0x1c5db0.clientX - this.dragStartX;
+      const _0x30d627 = _0x1c5db0.clientY - this.dragStartY;
+      if (_0x88fda9 * _0x88fda9 + _0x30d627 * _0x30d627 < 0x24) {
+        return;
+      }
+      this.dragMoved = true;
+      const _0x8b223f = _0x1cc6cd ? _0x1cc6cd.querySelector(".keyboard-key-text") : null;
+      if (_0x8b223f) {
+        _0x8b223f.classList.add("dragging");
+      }
+    }
+    const _0x4933c3 = _0x1c5db0.clientX - _0x5420ed.left - this.offsetX + _0x362b2f / 0x2;
+    const _0x82d7ac = _0x1c5db0.clientY - _0x5420ed.top - this.offsetY + _0x106ec8 / 0x2;
+    const _0x5dfb0c = Math.max(0x0, Math.min(_0x5420ed.width, _0x4933c3));
+    const _0x2e0396 = Math.max(0x0, Math.min(_0x5420ed.height, _0x82d7ac));
+    const _0x5aeee5 = Math.round(_0x5dfb0c / _0x5420ed.width * 0x500);
+    const _0x568c29 = Math.round(_0x2e0396 / _0x5420ed.height * 0x2d0);
+    this.$set(_0x2694b1, "coordinate", _0x5aeee5 + ',' + _0x568c29);
+    this.$set(_0x2694b1, "location", '');
+  },
+  'endDragKey'(_0x5425a4) {
+    if (!this.draggingKey) {
+      return;
+    }
+    const _0x873bfa = this.dragMoved;
+    const _0x15d6e4 = this.currentGameConfig.keyBoard[this.draggingKey];
+    this.draggingKey = null;
+    this.dragMoved = false;
+    document.removeEventListener("pointermove", this.onPointerMoveKey);
+    document.removeEventListener("pointerup", this.endDragKey);
+    if (!_0x873bfa || !_0x15d6e4) {
+      return;
+    }
+    const _0x340344 = document.querySelector(".keyboard-key-" + this.keyToKeyCode(_0x15d6e4.key));
+    if (_0x340344) {
+      const _0x340a9e = _0x340344.querySelector(".keyboard-key-text");
+      if (_0x340a9e) {
+        _0x340a9e.classList.remove("dragging");
+      }
+    }
+    this.lastDragEnd = Date.now();
+    this.saveKeyboardLayout();
+  },
+  'saveAndExitEdit'() {
+    Swal.fire({
+      'toast': true,
+      'theme': "material-ui-dark",
+      'position': "bottom",
+      'icon': "success",
+      'title': "Layout Saved",
+      'showConfirmButton': false,
+      'timer': 0x7d0
+    });
+    this.isEditKeyboard = false;
+    this.openMenu = false;
+  },
+  'resetKeyboardLayout'() {
+    Swal.fire({
+      'title': "Reset Layout?",
+      'theme': "material-ui-dark",
+      'text': "This will restore the server default keyboard layout.",
+      'icon': "warning",
+      'showCancelButton': true,
+      'confirmButtonColor': "#9ff2c7",
+      'cancelButtonColor': "#4b5563",
+      'confirmButtonText': "Yes, reset it!"
+    }).then(_0x580209 => {
+      if (_0x580209.isConfirmed) {
+        localStorage.removeItem("keyboardLayout:" + this.selectLayout + ':' + this.checkGame + ":center");
+        localStorage.removeItem("keyboardLayout:" + this.selectLayout + ':' + this.checkGame + ":newKeyboard");
+        if (this.defaultKeyboard) {
+          this.$set(this.currentGameConfig, "keyBoard", JSON.parse(JSON.stringify(this.defaultKeyboard)));
+        }
+        if (this.defaultCenter) {
+          this.center = JSON.parse(JSON.stringify(this.defaultCenter));
+          this.$set(this.currentGameConfig, "center", this.center);
+        }
+        Swal.fire({
+          'toast': true,
+          'theme': "material-ui-dark",
+          'position': "bottom",
+          'icon': "success",
+          'title': "Reset successful",
+          'showConfirmButton': false,
+          'timer': 0x7d0
+        });
+      }
+    });
+  },
+  'addKeyboardKey'() {
+    if (!this.isEditKeyboard) {
+      return;
+    }
+    let _0x2cdef9 = null;
+    const _0x6deb71 = _0x5157d1 => {
+      if (!Swal.isVisible()) {
+        return;
+      }
+      const _0x2b6cbb = (_0x5157d1.key || '').toLowerCase();
+      const _0x32fc54 = document.getElementById("swal-key-name");
+      const _0x2d41a1 = document.getElementById("swal-key-hint");
+      const _0xc2c296 = Swal.getConfirmButton();
+      const _0x14a802 = _0x25cba9 => {
+        _0x2cdef9 = null;
+        if (_0x32fc54) {
+          _0x32fc54.textContent = '—';
+        }
+        if (_0x2d41a1) {
+          _0x2d41a1.textContent = _0x25cba9;
+        }
+        if (_0xc2c296) {
+          _0xc2c296.disabled = true;
+        }
+      };
+      if (!_0x2b6cbb || !Object.prototype.hasOwnProperty.call(keyToKeyCodeMap, _0x2b6cbb)) {
+        return;
+      }
+      _0x5157d1.preventDefault();
+      if (this.currentGameConfig.supportLeftRocker && ['w', 'a', 's', 'd'].includes(_0x2b6cbb)) {
+        return _0x14a802("Left rocker enabled: WASD keys are built-in");
+      }
+      if (this.currentGameConfig.keyBoard[_0x2b6cbb]) {
+        return _0x14a802("Key already exists");
+      }
+      _0x2cdef9 = _0x2b6cbb;
+      if (_0x32fc54) {
+        _0x32fc54.textContent = _0x2b6cbb.length === 0x1 ? _0x2b6cbb.toUpperCase() : _0x2b6cbb;
+      }
+      if (_0x2d41a1) {
+        _0x2d41a1.textContent = '';
+      }
+      if (_0xc2c296) {
+        _0xc2c296.disabled = false;
+      }
+    };
+    Swal.fire({
+      'title': "Add Key",
+      'theme': "material-ui-dark",
+      'html': "<div style=\"color:#a1a1aa;font-size:0.9rem;margin-bottom:12px;\">请按下要添加的按键…</div><div id=\"swal-key-name\" style=\"font-size:2.2rem;font-weight:900;color:#fff;min-height:3rem;\">—</div><div id=\"swal-key-hint\" style=\"color:#fc4a5e;font-size:0.85rem;min-height:1.4rem;margin-top:8px;\"></div>",
+      'showCancelButton': true,
+      'confirmButtonColor': "#9ff2c7",
+      'confirmButtonText': "Add",
+      'cancelButtonText': "Cancel",
+      'focusConfirm': false,
+      'didOpen': () => {
+        const _0xb27d3c = Swal.getConfirmButton();
+        if (_0xb27d3c) {
+          _0xb27d3c.disabled = true;
+        }
+        document.addEventListener("keydown", _0x6deb71);
+      },
+      'willClose': () => {
+        document.removeEventListener("keydown", _0x6deb71);
+      }
+    }).then(_0x55031b => {
+      if (!_0x55031b.isConfirmed || !_0x2cdef9) {
+        return;
+      }
+      this.$set(this.currentGameConfig.keyBoard, _0x2cdef9, {
+        'key': _0x2cdef9,
+        'str': _0x2cdef9.length === 0x1 ? _0x2cdef9.toUpperCase() : _0x2cdef9,
+        'size': "small",
+        'coordinate': "640,360",
+        'location': ''
+      });
+      this.saveKeyboardLayout();
+    });
+  },
+  'removeKeyboardKey'(_0x509185) {
+    if (!this.isEditKeyboard) {
+      return;
+    }
+    if (this.lastDragEnd && Date.now() - this.lastDragEnd < 0x12c) {
+      return;
+    }
+    this.$delete(this.currentGameConfig.keyBoard, _0x509185);
+    this.saveKeyboardLayout();
+  },
+  'saveKeyboardLayout'() {
+    localStorage.setItem("keyboardLayout:" + this.selectLayout + ':' + this.checkGame + ":center", JSON.stringify(this.currentGameConfig.center));
+    localStorage.setItem("keyboardLayout:" + this.selectLayout + ':' + this.checkGame + ":newKeyboard", JSON.stringify(this.currentGameConfig.keyBoard));
+  },
+  'loadKeyboardLayout'() {
+    const _0x3aff4c = localStorage.getItem("keyboardLayout:" + this.checkGame + ":newKeyboard");
+    const _0x40aabc = localStorage.getItem("keyboardLayout:" + this.selectLayout + ':' + this.checkGame + ":newKeyboard");
+    if (_0x40aabc) {
+      this.$set(this.currentGameConfig, "keyBoard", JSON.parse(_0x40aabc));
+    } else {
+      if (_0x3aff4c) {
+        this.$set(this.currentGameConfig, "keyBoard", JSON.parse(_0x3aff4c));
+        localStorage.removeItem("keyboardLayout:" + this.checkGame + ":newKeyboard");
+        localStorage.setItem("keyboardLayout:" + this.selectLayout + ':' + this.checkGame + ":newKeyboard", _0x3aff4c);
+      } else if (this.defaultKeyboard) {
+        this.$set(this.currentGameConfig, "keyBoard", JSON.parse(JSON.stringify(this.defaultKeyboard)));
+      }
+    }
+    const _0x3c5218 = localStorage.getItem("keyboardLayout:" + this.checkGame + ":center");
+    const _0x7bcc7f = localStorage.getItem("keyboardLayout:" + this.selectLayout + ':' + this.checkGame + ":center");
+    if (_0x7bcc7f) {
+      this.center = JSON.parse(_0x7bcc7f);
+      this.$set(this.currentGameConfig, "center", this.center);
+    } else {
+      if (_0x3c5218) {
+        this.center = JSON.parse(_0x3c5218);
+        this.$set(this.currentGameConfig, "center", this.center);
+        localStorage.removeItem("keyboardLayout:" + this.checkGame + ":center");
+        localStorage.setItem("keyboardLayout:" + this.selectLayout + ':' + this.checkGame + ":center", _0x3c5218);
+      } else if (this.defaultCenter) {
+        this.center = JSON.parse(JSON.stringify(this.defaultCenter));
+        this.$set(this.currentGameConfig, "center", this.center);
+      }
+    }
+  },
+  'getTouchCounter'(_0x46c48c) {
+    if (!this.touchIdMap.has(_0x46c48c)) {
+      this.touchIdMap.set(_0x46c48c, this.touchCounter++);
+    }
+    return this.touchIdMap.get(_0x46c48c);
+  },
+  'getUTCDate'() {
+    const _0x5319a6 = new Date();
+    const [_0x3aa723, _0x1a2fdf, _0x717759, _0x16e67e, _0xce7aed, _0x4f68dc] = [_0x5319a6.getUTCFullYear(), _0x5319a6.getUTCMonth() + 0x1, _0x5319a6.getUTCDate(), _0x5319a6.getUTCHours(), _0x5319a6.getUTCMinutes(), _0x5319a6.getUTCSeconds()].map(_0xbe7fa0 => String(_0xbe7fa0).padStart(0x2, '0'));
+    this.utcDate = _0x3aa723 + '-' + _0x1a2fdf + '-' + _0x717759 + " " + _0x16e67e + ':' + _0xce7aed + ':' + _0x4f68dc;
+  },
+  'setWithExpire'(_0x3d073f, _0x268b9a, _0x50c929) {
+    const _0x14d279 = Date.now();
+    const _0x35ec87 = {
+      'value': _0x268b9a,
+      'expire': _0x14d279 + _0x50c929
+    };
+    localStorage.setItem(_0x3d073f, JSON.stringify(_0x35ec87));
+  },
+  'getWithExpire'(_0x2c72fb) {
+    const _0x19d7d7 = localStorage.getItem(_0x2c72fb);
+    if (!_0x19d7d7) {
+      return null;
+    }
+    const _0x226c54 = JSON.parse(_0x19d7d7);
+    if (Date.now() > _0x226c54.expire) {
+      localStorage.removeItem(_0x2c72fb);
+      return null;
+    }
+    return _0x226c54.value;
+  },
+  async 'findAvailableApiFast'(_0x2d7ba9) {
+    const _0x4ad847 = _0x2d7ba9.map(() => new AbortController());
+    return new Promise(_0x26ed8a => {
+      let _0x463d9f = 0x0;
+      let _0x402520 = false;
+      _0x2d7ba9.forEach((_0x508f11, _0xa646d0) => {
+        this.checkApi(_0x508f11, _0x4ad847[_0xa646d0]).then(_0xe1035 => {
+          if (_0x402520) {
+            return;
+          }
+          if (_0xe1035) {
+            _0x402520 = true;
+            _0x4ad847.forEach((_0x5bbfbb, _0xa797d1) => {
+              if (_0xa797d1 !== _0xa646d0) {
+                _0x5bbfbb.abort();
+              }
+            });
+            _0x26ed8a(_0x508f11);
+          } else {
+            _0x463d9f++;
+            if (_0x463d9f === _0x2d7ba9.length) {
+              _0x26ed8a(null);
+            }
+          }
+        });
+      });
+    });
+  },
+  async 'checkApi'(_0x36902f, _0x239302, _0xcc87a5 = 0xbb8) {
+    const _0x5c7465 = setTimeout(() => _0x239302.abort(), _0xcc87a5);
+    try {
+      const _0xb3adf = await fetch(_0x36902f + "/_ping", {
+        'signal': _0x239302.signal
+      });
+      return _0xb3adf.ok;
+    } catch {
+      return false;
+    } finally {
+      clearTimeout(_0x5c7465);
+    }
+  },
+  async 'getApiHost'() {
+    const _0x421dce = ["https://api.cloudmoon.cloudbatata.com", "https://api.prod.cloudmoonapp.com", "https://api.prod.geometry.today", "https://hrz5zfjq02.execute-api.us-east-1.amazonaws.com"];
+    this.apiHostUrl = await this.findAvailableApiFast(_0x421dce);
+    if (!this.apiHostUrl) {
+      const _0x1fe05f = await this.checkApi("https://api.prod.viewoncloud.com", new AbortController());
+      if (_0x1fe05f) {
+        this.apiHostUrl = "https://api.prod.viewoncloud.com";
+      }
+    }
+  }
+};
+window.App = new Vue({
+  'el': "#app",
+  'data': AppData,
+  'methods': AppMethods,
+  'watch': {
+    'isRotateScreen'(_0x265ec9) {
+      this.direction = this.direction === 0x1 ? 0x0 : 0x1;
+      this.changeOrientation(this.direction);
+    }
+  },
+  async 'mounted'() {
+    if (!window.isAllInOne) {
+      await this.initApp();
+    }
+  }
+});
+  </script>
+
+</body>
+
+</html>
