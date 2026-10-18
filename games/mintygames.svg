@@ -2,29 +2,124 @@
   <foreignObject x="0" y="0" width="100%" height="100%">
     <body xmlns="http://www.w3.org/1999/xhtml">
       <meta content="width=device-width, initial-scale=1.0" name="viewport"></meta>
-      <iframe style="position:fixed; top:0; left:0; bottom:0; right:0; width:100%; height:100%; border:none; margin:0; padding:0; overflow:hidden; z-index:999999;" id="test"></iframe>
-      <script>const params = new URLSearchParams(window.location.search);
-        params.set("t", Date.now());
-        const safeUrl = "https://cdn.jsdelivr.net/gh/Bubba7004/minty-proxy-assets@main/games/index-261014.html" + "?" + params.toString();
-        let l = `
-        \x3Cscript>
-        launch();
-        function launch() {
-          try {
-            const url = decodeURIComponent("${safeUrl}");
-            fetch(url).then(response => response.text())
-              .then(html => {
-                document.open();
-                document.write(html);
-                document.close();
-              });
-          } catch (error) {
-            console.error('error:', error);
+      <iframe id="test" style="position:fixed; top:0; left:0; bottom:0; right:0; width:100%; height:100%; border:none; margin:0; padding:0; overflow:hidden; z-index:999999;"></iframe>
+      <script><![CDATA[
+        const START = "https://cdn.jsdelivr.net/gh/Bubba7004/minty-proxy-assets@main/games/index-261014.html";
+
+        // Injected into EVERY loaded page (and every nested iframe)
+        function patch() {
+          const CDN = "https://cdn.jsdelivr.net/";
+
+          const cdnHtml = (u) => {
+            try {
+              const x = new URL(u, document.baseURI);
+              return x.href.startsWith(CDN) && /\.html?$/i.test(x.pathname) ? x.href : null;
+            } catch (e) { return null; }
+          };
+
+          // Rewrites location.href = X / location = X / location.assign(X) / location.replace(X)
+          function rewrite(src) {
+            const L = String.raw`(?<![\w$.])(?:(?:window|self|top|parent|document)\.)?location`;
+            return src
+              .replace(new RegExp(L + String.raw`\.(?:assign|replace)\s*\(`, "g"), "__go(")
+              .replace(new RegExp(L + String.raw`(?:\.href)?\s*=(?!=)\s*([^;\n}]+)`, "g"), "__go($1)");
           }
+
+          async function build(url) {
+            const u = new URL(url);
+            u.searchParams.set("t", Date.now());
+            let html = rewrite(await (await fetch(u.href)).text());
+            // injected AFTER rewriting so our own code isn't touched
+            const inject = '<base href="' + url.split("#")[0] + '">' +
+              "<scr" + "ipt>(" + patch.toString() + ")()</scr" + "ipt>";
+            return /<head[^>]*>/i.test(html)
+              ? html.replace(/<head[^>]*>/i, (m) => m + inject)
+              : inject + html;
+          }
+          window.__build = build;
+
+          function fill(frame, url) {
+            if (frame.__cdnUrl === url) return;
+            frame.__cdnUrl = url;
+            build(url).then((h) => { frame.srcdoc = h; }).catch(console.error);
+          }
+
+          // __go: asks the PARENT to reload this frame with the new page
+          window.__go = function (u) {
+            const abs = cdnHtml(u);
+            if (abs && window.parent !== window) {
+              window.parent.postMessage({ __nav: true, url: abs }, "*");
+            } else {
+              location.href = new URL(u, document.baseURI).href; // non-jsDelivr-HTML: navigate normally
+            }
+          };
+
+          // Each level reloads whichever child frame asked to navigate
+          window.addEventListener("message", (e) => {
+            const d = e.data;
+            if (!d || d.__nav !== true) return;
+            for (const f of document.querySelectorAll("iframe")) {
+              if (f.contentWindow === e.source) { fill(f, d.url); return; }
+            }
+          });
+
+          // iframe.src = "..."
+          const desc = Object.getOwnPropertyDescriptor(HTMLIFrameElement.prototype, "src");
+          Object.defineProperty(HTMLIFrameElement.prototype, "src", {
+            get() { return desc.get.call(this); },
+            set(v) { const u = cdnHtml(v); if (u) fill(this, u); else desc.set.call(this, v); }
+          });
+
+          // iframe.setAttribute("src", "...")
+          const origSet = Element.prototype.setAttribute;
+          Element.prototype.setAttribute = function (name, value) {
+            if (this instanceof HTMLIFrameElement && String(name).toLowerCase() === "src") {
+              const u = cdnHtml(value);
+              if (u) { fill(this, u); return; }
+            }
+            return origSet.call(this, name, value);
+          };
+
+          // <iframe src="..."> in markup / innerHTML / appendChild
+          const check = (f) => {
+            const raw = f.getAttribute("src");
+            const u = raw && cdnHtml(raw);
+            if (u) { f.removeAttribute("src"); fill(f, u); }
+          };
+          const scan = (root) => {
+            if (root.nodeType !== 1) return;
+            if (root.tagName === "IFRAME") check(root);
+            root.querySelectorAll && root.querySelectorAll("iframe[src]").forEach(check);
+          };
+          new MutationObserver((muts) => {
+            for (const m of muts) {
+              if (m.type === "attributes") check(m.target);
+              else m.addedNodes.forEach(scan);
+            }
+          }).observe(document, { childList: true, subtree: true, attributes: true, attributeFilter: ["src"] });
+          scan(document.documentElement);
+
+          // <a href> clicks
+          document.addEventListener("click", (e) => {
+            const a = e.target.closest && e.target.closest("a[href]");
+            const u = a && cdnHtml(a.href);
+            if (u) { e.preventDefault(); window.__go(u); }
+          }, true);
+
+          // window.open
+          const origOpen = window.open;
+          window.open = function (u, ...rest) {
+            const abs = u && cdnHtml(u);
+            if (abs) { window.__go(abs); return null; }
+            return origOpen.call(window, u, ...rest);
+          };
         }
-        \x3C/script>`; 
-        var theIframe = document.getElementById('test'); 
-        theIframe.srcdoc = l;</script>
+
+        // Boot
+        patch();
+        const frame = document.getElementById("test");
+        window.__build(START).then((html) => { frame.srcdoc = html; }).catch(console.error);
+      ]]></script>
     </body>
   </foreignObject>
 </svg>
