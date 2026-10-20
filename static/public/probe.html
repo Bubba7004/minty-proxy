@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>minty | probe</title>
+  <link href="/styles.css" rel="stylesheet" type="text/css">
+  <link rel="icon" type="image/svg+xml" href="/images/minty.svg">
+  <style>
+    body { align-items: center; padding: 24px 16px; }
+    main { width: min(900px, 100%); }
+    h1 { font-family: "Fredoka", sans-serif; color: var(--mint); margin: 0 0 4px; }
+    p { color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 16px 0; }
+    th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+    td.by-edge { color: var(--error); font-weight: 600; }
+    td.by-ok { color: var(--mint); }
+    textarea { width: 100%; height: 190px; background: var(--pine-deep); color: var(--leaf-text); border: 1px solid var(--line); border-radius: 10px; padding: 10px; font: 12px/1.5 "Courier New", monospace; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>minty probe</h1>
+    <p>Runs a few requests from your browser to this server and shows who answered each one: minty, or the host's "web server isn't running" page.</p>
+    <button class="btn" id="run" type="button">Run again</button>
+    <table>
+      <thead><tr><th>Probe</th><th>HTTP</th><th>Answered by</th><th>Details</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <p>Copy this and send it back:</p>
+    <textarea id="out" readonly></textarea>
+  </main>
+
+  <script>
+    var rows = document.getElementById("rows");
+    var out = document.getElementById("out");
+    var lines = [];
+
+    function b64(s) { return encodeURIComponent(btoa(s)); }
+
+    function classify(res, body) {
+      if (/wispbyte|web server isn.t running/i.test(body)) return "HOST EDGE PAGE";
+      if (res.headers.get("x-bare-status")) return "minty (bare)";
+      return "minty";
+    }
+
+    function add(label, status, by, note) {
+      var tr = document.createElement("tr");
+      [label, status, by, note].forEach(function (v, i) {
+        var td = document.createElement("td");
+        td.textContent = v;
+        if (i === 2) td.className = by === "HOST EDGE PAGE" ? "by-edge" : "by-ok";
+        tr.appendChild(td);
+      });
+      rows.appendChild(tr);
+      lines.push([label, status, by, note].join(" | "));
+      out.value = lines.join("\n");
+    }
+
+    async function probe(label, path, init) {
+      var t = performance.now();
+      try {
+        var res = await fetch(path, Object.assign({ cache: "no-store" }, init || {}));
+        var body = await res.text();
+        var note = body.length + " bytes";
+        var bs = res.headers.get("x-bare-status");
+        if (bs) note += ", upstream status " + bs;
+        note += ", " + Math.round(performance.now() - t) + " ms";
+        var srv = res.headers.get("server"), ct = res.headers.get("content-type");
+        if (srv) note += ", server=" + srv;
+        if (ct) note += ", type=" + ct.split(";")[0];
+        var ce = res.headers.get("content-encoding");
+        if (ce) note += ", encoding=" + ce;
+        add(label, res.status, classify(res, body), note);
+      } catch (e) {
+        add(label, "-", "network error", String(e));
+      }
+    }
+
+    // opts.identity: don't ask for compression; opts.ua: send a normal browser User-Agent
+    function bareProbe(label, url, opts) {
+      opts = opts || {};
+      var host = new URL(url).host;
+      var sent = { host: host };
+      if (opts.ua) sent["user-agent"] = navigator.userAgent;
+      return probe(label, "/bare/v3/", { headers: {
+        "x-bare-url": url,
+        "x-bare-headers": JSON.stringify(sent),
+        "x-bare-forward-headers": opts.identity ? "accept-language" : "accept-encoding",
+        "x-bare-pass-headers": "content-type",
+        "x-bare-pass-status": "200,301,302"
+      } });
+    }
+
+    async function runAll() {
+      rows.textContent = "";
+      lines = [];
+      document.getElementById("run").disabled = true;
+
+      // 1. is the bare server reachable at all
+      await probe("bare manifest", "/bare/");
+
+      // 2. the same bare request for different targets
+      await bareProbe("bare -> example.com", "https://example.com/");
+      await bareProbe("bare -> play.geforcenow.com", "https://play.geforcenow.com/mall/");
+      await bareProbe("bare -> www.youtube.com", "https://www.youtube.com/");
+      await bareProbe("bare -> www.youtube.com/robots.txt", "https://www.youtube.com/robots.txt");
+
+      // 2b. what is it about the YouTube home page? other YouTube URLs, big non-YouTube pages,
+      //     and the home page with different request settings
+      await bareProbe("bare -> youtube /favicon.ico", "https://www.youtube.com/favicon.ico");
+      await bareProbe("bare -> youtube /generate_204", "https://www.youtube.com/generate_204");
+      await bareProbe("bare -> youtube /about/", "https://www.youtube.com/about/");
+      await bareProbe("bare -> m.youtube.com/", "https://m.youtube.com/");
+      await bareProbe("bare -> youtube.com/ (redirect)", "https://youtube.com/");
+      await bareProbe("bare -> www.google.com/ (big page)", "https://www.google.com/");
+      await bareProbe("bare -> wikipedia YouTube article (big page)", "https://en.wikipedia.org/wiki/YouTube");
+      await bareProbe("bare -> youtube home, no compression", "https://www.youtube.com/", { identity: true });
+      await bareProbe("bare -> youtube home, browser User-Agent", "https://www.youtube.com/", { ua: true });
+      await bareProbe("bare -> youtube home, again", "https://www.youtube.com/");
+
+      // 3. does the host react to the *text* "youtube" in a request header / query / path?
+      await probe("header says example.com", "/bare/", { headers: { "x-probe": "https://example.com/" } });
+      await probe("header says youtube", "/bare/", { headers: { "x-probe": "https://www.youtube.com/" } });
+      await probe("query says example.com", "/?probe=www.example.com");
+      await probe("query says youtube", "/?probe=www.youtube.com");
+
+      // 4. the encoded proxy path, fetched directly (this page isn't controlled by the proxy worker)
+      await probe("path: encoded example.com", "/minty/ixl/" + b64("https://example.com"));
+      await probe("path: encoded www.youtube.com", "/minty/ixl/" + b64("https://www.youtube.com"));
+
+      document.getElementById("run").disabled = false;
+    }
+
+    document.getElementById("run").addEventListener("click", runAll);
+    runAll();
+  </script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>minty</title>
+  <link href="/styles.css" rel="stylesheet" type="text/css">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/images/minty.svg">
+  <link rel="apple-touch-icon" href="/images/minty-192.png">
+  <meta name="theme-color" content="#0f2e26">
+  <meta name="msapplication-TileColor" content="#0f2e26">
+  <meta name="description" content="minty — fresh, fast, private browsing.">
+  <meta property="og:title" content="minty">
+  <meta property="og:description" content="minty — fresh, fast, private browsing.">
+  <meta property="og:image" content="/images/minty-512.png">
+  <script src="/sys/index.js"></script>
+</head>
+<body>
+  <main id="home">
+    <section class="hero">
+      <div class="wordmark">
+        <svg class="leaf" viewBox="0 0 64 64" aria-hidden="true"><path d="M50 14C28 13 14 24 14 41c0 5 2 8 5 10 2-10 8-18 18-23-7 6-12 14-14 24 3 1 7 1 10 0 13-3 20-16 17-38z"/></svg>
+        <h1>minty</h1>
+      </div>
+      <p class="tagline">browse fresh.</p>
+      <noscript><p class="tagline">minty needs JavaScript to work.</p></noscript>
+
+      <form id="uv-form" autocomplete="off">
+        <input id="uv-search-engine" value="https://www.google.com/search?hl=en-us&q=%s" type="hidden">
+        <input id="uv-address" type="text" placeholder="search or enter a url" aria-label="Search or enter a URL" spellcheck="false" autofocus>
+      </form>
+
+      <div class="error-area">
+        <p id="uv-error"></p>
+        <pre id="uv-error-code"></pre>
+      </div>
+    </section>
+
+    <footer>
+      <span>minty</span>
+      <a id="powered-by" href="https://github.com/titaniumnetwork-dev/Ultraviolet" target="_blank" rel="noopener">powered by Ultraviolet</a>
+    </footer>
+  </main>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var form = document.getElementById("uv-form");
+      var input = document.getElementById("uv-address");
+      var engine = document.getElementById("uv-search-engine");
+      var error = document.getElementById("uv-error");
+      var errorCode = document.getElementById("uv-error-code");
+
+      // use the search engine picked in minty's settings
+      try {
+        var saved = JSON.parse(localStorage.getItem("minty.settings") || "{}");
+        var engines = {
+          google: "https://www.google.com/search?hl=en-us&q=%s",
+          duckduckgo: "https://duckduckgo.com/?q=%s",
+          bing: "https://www.bing.com/search?q=%s"
+        };
+        if (engines[saved.engine]) engine.value = engines[saved.engine];
+
+        // credit whichever proxy is selected in settings
+        if (saved.proxy === "scramjet" || saved.proxy === "scramjet2") {
+          var credit = document.getElementById("powered-by");
+          credit.textContent = "powered by Scramjet";
+          credit.href = "https://github.com/MercuryWorkshop/scramjet";
+        }
+      } catch (e) { /* default engine */ }
+
+      function isUrl(val) {
+        return /^http(s?):\/\//.test(val) || (val.includes(".") && val.slice(0, 1) !== " ");
+      }
+
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        error.textContent = "";
+        errorCode.textContent = "";
+
+        var url = input.value.trim();
+        if (!url) return;
+        if (!isUrl(url)) url = engine.value.replace("%s", encodeURIComponent(url));
+        else if (!/^https?:\/\//.test(url)) url = "http://" + url;
+
+        if (/^https?:\/\/now\.gg\/?$/.test(url)) {
+          alert("you are going to a broken site! redirecting you to https://nowgg.lol/hub");
+          url = "https://nowgg.lol/hub";
+        }
+
+        // the browser page registers the selected proxy and encodes the URL itself
+        try {
+          sessionStorage.setItem("startUrl", url);
+        } catch (err) {
+          error.textContent = "Couldn't hand the page over to the browser.";
+          errorCode.textContent = err.toString();
+          return;
+        }
+        location.href = "calculus";
+      });
+    });
+  </script>
+</body>
+</html>

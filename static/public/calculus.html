@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>minty</title>
+  <link href="/styles.css" rel="stylesheet" type="text/css">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/images/minty.svg">
+  <meta name="theme-color" content="#0f2e26">
+  <meta property="og:title" content="minty">
+  <meta property="og:image" content="/images/minty-512.png">
+</head>
+<body class="app">
+  <div id="tabbar">
+    <div id="tabs" role="tablist"></div>
+    <button id="new-tab" type="button" title="New tab" aria-label="New tab">
+      <svg viewBox="0 0 24 24"><path d="M12 5v14"/><path d="M5 12h14"/></svg>
+    </button>
+    <button id="menu-btn" type="button" title="Menu" aria-label="Menu" aria-haspopup="true" aria-expanded="false">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
+    </button>
+  </div>
+
+  <div id="toolbar">
+    <button id="btn-back" type="button" title="Back" aria-label="Back">
+      <svg viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+    </button>
+    <button id="btn-forward" type="button" title="Forward" aria-label="Forward">
+      <svg viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+    </button>
+    <button id="btn-reload" type="button" title="Reload" aria-label="Reload">
+      <svg viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
+    </button>
+    <button id="btn-home" type="button" title="New tab page" aria-label="New tab page">
+      <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+    </button>
+    <form id="url-form" autocomplete="off">
+      <input id="url-input" type="text" placeholder="search or enter a url" aria-label="Search or enter a URL" spellcheck="false">
+      <button id="btn-star" type="button" title="Bookmark this page" aria-label="Bookmark this page" disabled>
+        <svg viewBox="0 0 24 24"><path d="M12 3l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.8 6.2 20.9l1.1-6.5L2.6 9.8l6.5-.9z"/></svg>
+      </button>
+    </form>
+  </div>
+
+  <div id="bookmarks-bar"></div>
+
+  <div id="viewport">
+    <div id="home" hidden>
+      <section class="hero">
+        <div class="wordmark">
+          <svg class="leaf" viewBox="0 0 64 64" aria-hidden="true"><path d="M50 14C28 13 14 24 14 41c0 5 2 8 5 10 2-10 8-18 18-23-7 6-12 14-14 24 3 1 7 1 10 0 13-3 20-16 17-38z"/></svg>
+          <h1>minty</h1>
+        </div>
+        <p class="tagline">browse fresh.</p>
+        <form id="uv-form" autocomplete="off">
+          <input id="uv-address" type="text" placeholder="search or enter a url" aria-label="Search or enter a URL" spellcheck="false">
+        </form>
+        <div id="quick-links"></div>
+        <div class="error-area">
+          <p id="uv-error"></p>
+          <pre id="uv-error-code"></pre>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div id="menu" role="menu" hidden>
+    <button type="button" role="menuitem" data-act="newTab">New tab <span class="hint" data-hint="newTab"></span></button>
+    <button type="button" role="menuitem" data-act="bookmarkPage">Bookmark this page</button>
+    <button type="button" role="menuitem" data-act="bookmarks">Bookmarks</button>
+    <button type="button" role="menuitem" data-act="toggleBar">Show / hide bookmarks bar <span class="hint" data-hint="bookmarks"></span></button>
+    <hr>
+    <button type="button" role="menuitem" data-act="fullscreen">Fullscreen site <span class="hint" data-hint="fullscreen"></span></button>
+    <button type="button" role="menuitem" data-act="closeTab">Close tab <span class="hint" data-hint="closeTab"></span></button>
+    <hr>
+    <button type="button" role="menuitem" data-act="settings">Settings</button>
+  </div>
+
+  <dialog id="dlg-bookmarks" aria-labelledby="dlg-bookmarks-title">
+    <div class="dlg-head">
+      <h2 id="dlg-bookmarks-title">Bookmarks</h2>
+      <button class="dlg-close" type="button" aria-label="Close">&times;</button>
+    </div>
+    <div class="dlg-body">
+      <ul class="list" id="bm-list"></ul>
+      <div class="dlg-actions">
+        <button class="btn" type="button" id="bm-add">Add current page</button>
+        <button class="btn" type="button" id="bm-export">Export</button>
+        <button class="btn" type="button" id="bm-import">Import</button>
+        <button class="btn danger" type="button" id="bm-clear">Remove all</button>
+        <input type="file" id="bm-file" accept="application/json" hidden>
+      </div>
+    </div>
+  </dialog>
+
+  <dialog id="dlg-settings" aria-labelledby="dlg-settings-title">
+    <div class="dlg-head">
+      <h2 id="dlg-settings-title">Settings</h2>
+      <button class="dlg-close" type="button" aria-label="Close">&times;</button>
+    </div>
+    <div class="dlg-body">
+      <div class="setting">
+        <div class="setting-label">Search engine<small>Used when you type something that isn't a URL.</small></div>
+        <select id="set-engine"></select>
+      </div>
+      <div class="setting">
+        <div class="setting-label">Proxy<small>Which engine loads sites. Applies to your next page; tabs already open keep theirs until you navigate.</small></div>
+        <select id="set-proxy"></select>
+      </div>
+      <div class="setting">
+        <div class="setting-label">Links that open a new tab<small>Sites that try to open a new browser tab stay inside minty instead.</small></div>
+        <select id="set-links">
+          <option value="tab">Open in a minty tab</option>
+          <option value="same">Open in the same tab</option>
+        </select>
+      </div>
+      <div class="setting">
+        <div class="setting-label">Bookmarks bar<small>Show bookmarks under the address bar.</small></div>
+        <label class="switch"><input type="checkbox" id="set-bar"><span></span></label>
+      </div>
+      <div class="setting">
+        <div class="setting-label">Proxy service worker<small>Needed to load sites through minty.</small></div>
+        <span class="status-pill" id="sw-status">checking…</span>
+      </div>
+      <p class="setting-note" id="proxy-detail" hidden></p>
+      <h3 class="setting-label" style="margin:20px 0 0">Keyboard shortcuts</h3>
+      <div id="key-list"></div>
+      <div class="dlg-actions">
+        <button class="btn" type="button" id="keys-reset">Reset shortcuts</button>
+        <button class="btn danger" type="button" id="data-reset">Reset all settings</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="/minty/bundle.js" defer></script>
+  <script src="/minty/config.js?cdn" defer></script>
+  <script src="/browser.js" defer></script>
+</body>
+</html>
