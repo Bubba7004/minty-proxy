@@ -2749,24 +2749,46 @@ const AppMethods = {
                     this.podName = _0x5b156b[0x1];
                     log.info("%c podName", "color: blue; font-size: 14px", this.podName);
                   } else {
-if (_0x3294f8 === "locale") {
-                      this.podLocale = _0x5b156b[0x1];
+                    if (_0x3294f8 === "kickout") {
+                      this.getout = true;
+                      this.socket.close();
+                      if (_0x5b156b[0x1] === "no_time") {
+                        this.noTime = true;
+                        Swal.fire({
+                          'theme': "material-ui-dark",
+                          'icon': "warning",
+                          'title': "Session Ended",
+                          'text': "Today's free game time has been used up. Purchase a plan to continue playing.",
+                          'confirmButtonText': "Return to HomePage",
+                          'showConfirmButton': true,
+                          'allowOutsideClick': false,
+                          'allowEscapeKey': false
+                        }).then(() => {
+                          window.location.href = "./main.svg";
+                          ;
+                        });
+                      }
+                      log.info("%c client kickout", "color: red; font-size: 14px", _0x5b156b[0x1]);
                     } else {
-                      if (_0x3294f8 === "gms") {
-                        if (!this.getWithExpire("disable_gms_alert")) {
-                          Swal.fire({
-                            'theme': "material-ui-dark",
-                            'icon': "warning",
-                            'title': "Safety Notice",
-                            'text': "When accessing your Google account on our cloud server, expect notification from Google regarding the login from a new device (Galaxy S22) and location. This is expected, and we'll ensure your account's safety.",
-                            'confirmButtonText': 'OK',
-                            'showConfirmButton': true,
-                            'allowOutsideClick': false,
-                            'allowEscapeKey': false
-                          }).then(() => {
-                            this.setWithExpire("disable_gms_alert", '1', 86400000);
-                          });
-                          
+                      if (_0x3294f8 === "locale") {
+                        this.podLocale = _0x5b156b[0x1];
+                      } else {
+                        if (_0x3294f8 === "gms") {
+                          if (!this.getWithExpire("disable_gms_alert")) {
+                            Swal.fire({
+                              'theme': "material-ui-dark",
+                              'icon': "warning",
+                              'title': "Safety Notice",
+                              'text': "When accessing your Google account on our cloud server, expect notification from Google regarding the login from a new device (Galaxy S22) and location. This is expected, and we'll ensure your account's safety.",
+                              'confirmButtonText': 'OK',
+                              'showConfirmButton': true,
+                              'allowOutsideClick': false,
+                              'allowEscapeKey': false
+                            }).then(() => {
+                              this.setWithExpire("disable_gms_alert", '1', 86400000);
+                            });
+                            ;
+                          }
                         }
                       }
                     }
@@ -2778,8 +2800,7 @@ if (_0x3294f8 === "locale") {
         }
       }
     }
-  }
-},
+  },
   'pushSteps'(_0x5df70e) {
     const _0x4e0fe0 = document.getElementById("step-msg");
     if (_0x4e0fe0) {
